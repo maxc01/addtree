@@ -1,4 +1,3 @@
-import weakref
 import typing as tp
 from typing import Dict, Sequence, Optional
 
@@ -6,7 +5,7 @@ import numpy as np
 
 
 class Parameter:
-    def __init__(self, name: str, dim: int, data: tp.Optional[np.ndarray] = None):
+    def __init__(self, name: str, dim: int, data: Optional[np.ndarray] = None):
         self.name = name
         self.dim = dim
         self.data = data
