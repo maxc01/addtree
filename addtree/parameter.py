@@ -11,6 +11,7 @@ class Parameter:
         self.data = data
         if data is None:
             self.set_rand()
+        assert data.shape == (dim,)
 
     def set_rand(self):
         self.data = np.random.rand(self.dim)
@@ -21,6 +22,11 @@ class Parameter:
 
 
 NAME2NODE = {}
+
+
+def clear_state():
+    global NAME2NODE
+    NAME2NODE = {}
 
 
 class ParameterNode:
