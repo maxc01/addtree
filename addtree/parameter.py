@@ -51,6 +51,9 @@ class ParameterNode:
     def __repr__(self):
         return self.parameter.name
 
+    def __eq__(self, other: "ParameterNode"):
+        return self.name == other.name
+
     def finish_add_child(self):
 
         bfs_template = []
