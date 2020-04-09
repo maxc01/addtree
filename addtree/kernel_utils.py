@@ -2,7 +2,7 @@ import george.kernels as K
 from functools import reduce
 
 
-def built_addtree(root):
+def build_addtree(root):
     total_dim = len(root.bfs_template)
     name2ker = {}
     ks = []

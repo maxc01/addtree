@@ -11,7 +11,6 @@ class Parameter:
         self.data = data
         if data is None:
             self.set_rand()
-        assert data.shape == (dim,)
 
     def set_rand(self):
         self.data = np.random.rand(self.dim)
@@ -27,6 +26,10 @@ NAME2NODE = {}
 def clear_state():
     global NAME2NODE
     NAME2NODE = {}
+
+
+def get_state():
+    return NAME2NODE
 
 
 class ParameterNode:
@@ -60,9 +63,11 @@ class ParameterNode:
         bfs_template = []
 
         def set_index(node):
-            bfs_template.append(-1)
-            node.bfs_index = len(bfs_template) - 1
-            bfs_template.extend([-1] * node.parameter.dim)
+            n_start = len(bfs_template)
+            n_end = n_start + node.parameter.dim + 1
+            node.bfs_index = n_start
+            node.param_axes = range(n_start + 1, n_end)
+            bfs_template.extend([-1] * (1 + node.parameter.dim))
 
         self._bfs(func=set_index)
 
@@ -93,13 +98,15 @@ class ParameterNode:
 
         return all_nodes
 
-    def random_path(self) -> Sequence["ParameterNode"]:
+    def random_path(self, rand_data=False) -> Sequence["ParameterNode"]:
         """generate a random path from current node.
         """
 
         path = []
 
         def _sample(node):
+            if rand_data:
+                node.parameter.set_rand()
             path.append(node)
             if node.is_leaf():
                 return
