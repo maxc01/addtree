@@ -2,6 +2,7 @@ import pytest
 import numpy as np
 from scipy.optimize import minimize
 import heapq
+from tqdm import tqdm
 
 from addtree.kernel_utils import build_addtree
 from addtree.storage import Storage
@@ -33,14 +34,15 @@ def large_tree():
 
 
 def obj_func(param_dict):
+    SHIFT = 0.5
     if "x1" in param_dict and "x3" in param_dict:
-        value = param_dict["x3"] ** 2 + param_dict["x1"] + 0.1
+        value = (param_dict["x3"] - SHIFT) ** 2 + param_dict["x1"] + 0.1
     elif "x1" in param_dict and "x4" in param_dict:
-        value = param_dict["x4"] ** 2 + param_dict["x1"] + 0.2
+        value = (param_dict["x4"] - SHIFT) ** 2 + param_dict["x1"] + 0.2
     elif "x2" in param_dict and "x5" in param_dict:
-        value = param_dict["x5"] ** 2 + param_dict["x2"] + 0.3
+        value = (param_dict["x5"] - SHIFT) ** 2 + param_dict["x2"] + 0.3
     elif "x2" in param_dict and "x6" in param_dict:
-        value = param_dict["x6"] ** 2 + param_dict["x2"] + 0.4
+        value = (param_dict["x6"] - SHIFT) ** 2 + param_dict["x2"] + 0.4
     else:
         raise KeyError(f"{param_dict} don't contain the correct keys")
 
@@ -50,16 +52,15 @@ def obj_func(param_dict):
     return info
 
 
+clear_state()
 root = large_tree()
 ss = Storage()
-for i in range(10):
+for i in range(5):
     path = root.random_path(rand_data=True)
-    param_dict = root.path2dict(path)
-    res = obj_func(param_dict)
-    ss.add(root.path2vec(path), res["value"], res["value_sigma"])
+    res = obj_func(path.path2dict())
+    ss.add(path.path2vec(root.obs_dim), res["value"], res["value_sigma"], path)
 
 ker = build_addtree(root)
-gp = ss.optimize(ker, 2, True)
 
 
 def LCB(gp, X_new, Y_train, kappa=1.0):
@@ -68,38 +69,60 @@ def LCB(gp, X_new, Y_train, kappa=1.0):
     return pred - kappa * pred_sigma
 
 
+# IMPORTANT: any parameter passed to acq MUST be effective, i.e. other
+# dimensions must be set to be invalid
+# BUG: the above is just the bug
+
 acq_func = LCB
 
 
-def optimize_acq(gp, Y, paths, total_dim, grid_size=100, nb_seed=2):
+# BUG: the following is wrong, any parameter passed to acq MUST be effective
+def fill_x(x, total_dim, eff_axes):
+    vec = np.empty(total_dim)
+    vec[...] = -1
+    vec[eff_axes] = x
+    return vec
+
+
+def optimize_acq(gp, Y_train, total_dim, grid_size=100, nb_seed=2):
 
     info = []
-    for path in paths:
-        grid = path.rand_grid(grid_size, total_dim)
-        grid_acq = acq_func(gp, grid, Y)
+    for path_id in ["00", "01", "10", "11"]:
+        path = root.select_path(path_id)
+        eff_axes = path.axes()
+        grid = path.rand(grid_size, total_dim)
+        grid_acq = acq_func(gp, grid, Y_train)
         seeds_idx = np.argsort(grid_acq)[:nb_seed]
-        eff_axes = path.effective_axes()
         bounds = [(0, 1)] * len(eff_axes)
         ixgrid = np.ix_(seeds_idx, eff_axes)
         seeds = grid[ixgrid]
-        # start optimization using these seeds
 
         def obj_func_acq(x):
-            """x is parameter of compression algorithm, so in this case, it is 2d
-            """
-            fv = path.populate(total_dim, x)
-            fv = np.atleast_2d(fv)
-            return acq_func(gp, fv, Y).item()
+            # vec = fill_x(x, root.obs_dim, eff_axes)
+            vec = path.set_data(x).path2vec(root.obs_dim)
+            return acq_func(gp, vec[None], Y_train).item()
 
-        # minimization
+        # start minimization using these seeds
         _x_best = None
         _y_best = np.inf
         for seed in seeds:
-            result = minimize(obj_func_acq, x0=seed, method="L-BFGS-B", bounds=bounds)
+            result = minimize(obj_func_acq, x0=seed, method="L-BFGS-B", bounds=bounds,)
             if result.fun < _y_best:
                 _y_best = result.fun
                 _x_best = result.x
-        heapq.heappush(info, (_y_best, _x_best, path))
+        heapq.heappush(info, (_y_best, path_id, _x_best, path))
 
-    # y_best, x_best, path = info[0]
     return info[0]
+
+
+for i in tqdm(range(95)):
+    gp = ss.optimize(ker, n_restart=2, verbose=False)
+    _, _, x_best, path = optimize_acq(gp, ss.Y, root.obs_dim)
+    path.set_data(x_best)
+    obj_info = obj_func(path.path2dict())
+    ss.add(
+        path.path2vec(root.obs_dim),
+        obj_info["value"],
+        obj_info["value_sigma"],
+        path=path,
+    )
