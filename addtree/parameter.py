@@ -35,6 +35,7 @@ class NodePath:
 
     def dict2vec(self, param_dict: Dict[str, np.ndarray], obs_dim: int) -> np.ndarray:
         """transform a dict to a vector, which will be added to a Storage.
+        # IMPORTANT: The basic patter is: first set flag, second set data
         """
         bfs_repr = np.array([-1] * obs_dim, dtype="f")
         for k, v in param_dict.items():
@@ -53,7 +54,7 @@ class NodePath:
     def set_data(self, x: np.ndarray) -> "NodePath":
         cur_idx = 0
         for node in self.path:
-            node.parameter.data = x[cur_idx: (cur_idx+node.parameter.dim)]
+            node.parameter.data = x[cur_idx : (cur_idx + node.parameter.dim)]
             cur_idx += node.parameter.dim
 
         return self
