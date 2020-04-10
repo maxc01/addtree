@@ -190,45 +190,13 @@ def get_data_loaders(dataset_name="mnist", batch_size=128):
     return train_loader, test_loader
 
 
-def build_one_pruner(op_name, method, method_param, model):
-    assert op_name in ["conv1", "conv2", "fc1"]
-    assert method in ["level", "agp"]
-
-    config_list_level = [
-        {"sparsity": method_param, "op_names": [op_name]},
-    ]
-    config_list_agp = [
-        {
-            "initial_sparsity": 0,
-            "final_sparsity": method_param,
-            "start_epoch": 0,
-            "end_epoch": 3,
-            "frequency": 1,
-            "op_names": [op_name],
-        }
-    ]
-
-    prune_config = {
-        "level": LevelPruner(model, config_list_level),
-        "agp": AGP_Pruner(model, config_list_agp),
-    }
-
-    # pruner = prune_config(params["prune_method"]["_name"])
-    pruner = prune_config[method]
-    return pruner
-
-
-def chain_pruners(pruners):
-    pass
-
-
 def train(args, model, device, train_loader, optimizer, epoch):
     model.train()
     for batch_idx, (data, target) in enumerate(train_loader):
         data, target = data.to(device), target.to(device)
         optimizer.zero_grad()
         output = model(data)
-        loss = F.nll_loss(output, target)
+        loss = F.cross_entropy(output, target)
         loss.backward()
         optimizer.step()
         if batch_idx % args.log_interval == 0:
@@ -251,7 +219,7 @@ def test(args, model, device, test_loader):
         for data, target in test_loader:
             data, target = data.to(device), target.to(device)
             output = model(data)
-            test_loss += F.nll_loss(output, target, reduction="sum").item()
+            test_loss += F.cross_entropy(output, target, reduction="sum").item()
             pred = output.argmax(dim=1, keepdim=True)
             correct += pred.eq(target.view_as(pred)).sum().item()
 
@@ -291,7 +259,7 @@ def setup_and_prune(cmd_args, params):
 
     if cmd_args.resume_from is not None and os.path.exists(cmd_args.resume_from):
         logger.info("loading checkpoint {} ...".format(cmd_args.resume_from))
-        model.load_state_dict(torch.load(cmd_args.resume_from, map_location=device))
+        model.load_state_dict(torch.load(cmd_args.resume_from))
         test(cmd_args, model, device, test_loader)
     else:
         optimizer = torch.optim.SGD(
