@@ -39,8 +39,11 @@ class Storage:
         return pred, pred_sd
 
     def optimize(self, kernel, n_restart=1, verbose=False):
-
         gp = george.GP(kernel, mean=self.Y.mean())
+        gp.compute(self.X, self.Yerr)
+        
+        if verbose:
+            print("Initial ln-likelihood: {0:.2f}".format(gp.log_likelihood(self.Y)))
 
         def _neg_ln_like(p):
             gp.set_parameter_vector(p)
@@ -49,10 +52,6 @@ class Storage:
         def _grad_neg_ln_like(p):
             gp.set_parameter_vector(p)
             return -gp.grad_log_likelihood(self.Y)
-
-        gp.compute(self.X, self.Yerr)
-        if verbose:
-            print("Initial ln-likelihood: {0:.2f}".format(gp.log_likelihood(self.Y)))
 
         bounds = kernel.get_parameter_bounds()
         x_best = None
