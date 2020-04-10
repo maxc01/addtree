@@ -1,7 +1,75 @@
-import typing as tp
 from typing import Dict, Sequence, Optional
 
 import numpy as np
+
+NAME2NODE = {}
+
+
+def clear_state():
+    global NAME2NODE
+    NAME2NODE = {}
+
+
+def get_state():
+    return NAME2NODE
+
+
+class NodePath:
+    """ This class represents a list of ParameterNode
+    """
+
+    def __init__(self, path: Sequence["ParameterNode"]):
+        self.path = path
+
+    def path2dict(self) -> Dict[str, np.ndarray]:
+        """transform a path to a dict, which is then passed to objective function.
+        """
+        param_dict = {node.name: node.parameter.data for node in self.path}
+        return param_dict
+
+    def path2vec(self, obs_dim: int) -> np.ndarray:
+        """transform a path to a vector, which will be added to a Storage.
+        """
+        param_dict = self.path2dict()
+        return self.dict2vec(param_dict, obs_dim)
+
+    def dict2vec(self, param_dict: Dict[str, np.ndarray], obs_dim: int) -> np.ndarray:
+        """transform a dict to a vector, which will be added to a Storage.
+        """
+        bfs_repr = np.array([-1] * obs_dim, dtype="f")
+        for k, v in param_dict.items():
+            node = NAME2NODE[k]
+            bfs_repr[node.bfs_index] = node.local_id
+            bfs_repr[node.param_axes] = v
+
+        return bfs_repr
+
+    def axes(self):
+        _axes = []
+        for node in self.path:
+            _axes.extend(node.param_axes)
+        return _axes
+
+    def set_data(self, x: np.ndarray) -> "NodePath":
+        cur_idx = 0
+        for node in self.path:
+            node.parameter.data = x[cur_idx: (cur_idx+node.parameter.dim)]
+            cur_idx += node.parameter.dim
+
+        return self
+
+    def rand(self, n, obs_dim):
+        a = -np.random.rand(n, obs_dim)
+        for node in self.path:
+            a[:, node.bfs_index] = node.local_id
+            a[:, node.param_axes] *= -1
+        return a
+
+    def __getitem__(self, idx):
+        return self.path[idx]
+
+    def __repr__(self):
+        return "->".join([node.name for node in self.path])
 
 
 class Parameter:
@@ -18,18 +86,6 @@ class Parameter:
     def __repr__(self):
         data_repr = ", ".join(["{:.2f}".format(i) for i in self.data])
         return "{}: [{}]".format(self.name, data_repr)
-
-
-NAME2NODE = {}
-
-
-def clear_state():
-    global NAME2NODE
-    NAME2NODE = {}
-
-
-def get_state():
-    return NAME2NODE
 
 
 class ParameterNode:
@@ -66,12 +122,13 @@ class ParameterNode:
             n_start = len(bfs_template)
             n_end = n_start + node.parameter.dim + 1
             node.bfs_index = n_start
-            node.param_axes = range(n_start + 1, n_end)
+            node.param_axes = list(range(n_start + 1, n_end))
             bfs_template.extend([-1] * (1 + node.parameter.dim))
 
         self._bfs(func=set_index)
+        self.obs_dim = len(bfs_template)
 
-        self.bfs_template = bfs_template
+        self.bfs_template = np.asarray(bfs_template, dtype="f")
 
     def _bfs(self, func=None, *func_args, **func_kwargs):
         bfs_queue = []
@@ -98,7 +155,7 @@ class ParameterNode:
 
         return all_nodes
 
-    def random_path(self, rand_data=False) -> Sequence["ParameterNode"]:
+    def random_path(self, rand_data=False) -> NodePath:
         """generate a random path from current node.
         """
 
@@ -116,34 +173,9 @@ class ParameterNode:
 
         _sample(self)
 
-        return path
+        return NodePath(path)
 
-    def path2dict(self, path: Sequence["ParameterNode"]) -> Dict[str, np.ndarray]:
-        """transform a path to a dict, which is then passed to objective function.
-        """
-        param_dict = {node.name: node.parameter.data for node in path}
-        return param_dict
-
-    def dict2vec(self, param_dict: Dict[str, np.ndarray]) -> np.ndarray:
-        """transform a dict to a vector, which will be added to a Storage.
-        """
-        bfs_repr = self.bfs_template.copy()
-        for k, v in param_dict.items():
-            node = NAME2NODE[k]
-            n_start = node.bfs_index
-            n_end = n_start + node.parameter.dim + 1
-            bfs_repr[n_start] = node.local_id
-            bfs_repr[(n_start + 1) : n_end] = v
-
-        return np.asarray(bfs_repr)
-
-    def path2vec(self, path: Sequence["ParameterNode"]) -> np.ndarray:
-        """transform a path to a vector, which will be added to a Storage.
-        """
-        param_dict = self.path2dict(path)
-        return self.dict2vec(param_dict)
-
-    def select_path(self, path_id: str) -> tp.Sequence["ParameterNode"]:
+    def select_path(self, path_id: str) -> NodePath:
         """select path from a string
 
         Note: path_id should not contain itself, e.g. '10' means select second
@@ -157,9 +189,9 @@ class ParameterNode:
             path.append(cur.children[local_id])
             cur = cur.children[local_id]
 
-        return path
+        return NodePath(path)
 
-    def path_from_keys(self, keys) -> tp.Sequence["ParameterNode"]:
+    def path_from_keys(self, keys) -> Sequence["ParameterNode"]:
         path = [self]
         for k in keys:
             path.append(NAME2NODE[k])
