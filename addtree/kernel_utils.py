@@ -3,20 +3,18 @@ from functools import reduce
 
 
 def build_addtree(root):
-    total_dim = len(root.bfs_template)
+    obs_dim = root.obs_dim
     name2ker = {}
     ks = []
     bfs_nodes = root.bfs_nodes()
     for node in bfs_nodes:
-        kd = K.DeltaKernel(ndim=total_dim, axes=node.bfs_index)
-        c_start = node.bfs_index + 1
-        c_end = c_start + node.parameter.dim
-        axes = list(range(c_start, c_end))
+        kd = K.DeltaKernel(ndim=obs_dim, axes=node.bfs_index)
+        axes = node.param_axes
         if len(axes) == 0:
             k = kd
         else:
             kc = K.ExpSquaredKernel(
-                0.5, ndim=total_dim, axes=axes, metric_bounds=[(-7, 4.0)]
+                0.5, ndim=obs_dim, axes=axes, metric_bounds=[(-7, 4.0)]
             )
             name2ker[node.parameter.name] = kc
             k = kd * kc
