@@ -93,6 +93,8 @@ class ParameterNode:
     def __init__(self, parameter: Parameter):
         self.parameter = parameter
         self.name = parameter.name
+        # TODO: use ID instead of name to index node
+        # because name can duplicate, but ID cannot
         if self.name in NAME2NODE:
             raise ValueError(f"Node {self.name} already in the tree.")
         NAME2NODE[self.name] = self
