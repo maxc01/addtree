@@ -6,6 +6,9 @@ authors = ["maxc01 <xingchen92@gmail.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.7"
+numpy = "^1.18.2"
+torch = "^1.4.0"
+torchvision = "^0.5.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
