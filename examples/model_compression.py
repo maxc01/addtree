@@ -64,9 +64,18 @@ def do_prune(model, params):
         else:
             raise ValueError(f"{method} is wrong")
 
+    n1 = 0
+    n2 = 0
     for name in names:
         module = getattr(model, name)
         prune_module(module, params[name]["prune_method"], params[name]["amount"])
+        n1 += torch.sum(module.weight == 0)
+        n2 += module.weight.nelement()
+    sparsity = float(n1) / n2
+
+    info = {}
+    info["sparsity"] = sparsity
+    return info
 
 
 def testing_params():
@@ -299,13 +308,13 @@ def setup_and_prune(cmd_args, params):
     )
     best_top1 = 0
 
-    do_prune(model, params)
+    prune_stats = do_prune(model, params)
 
     if cmd_args.multi_gpu and torch.cuda.device_count() > 1:
         model = nn.DataParallel(model)
 
     for epoch in range(cmd_args.prune_epochs):
-        logger.info("# Epoch {} #".format(epoch))
+        logger.info("# Finetune Epoch {} #".format(epoch))
         train(cmd_args, model, device, train_loader, optimizer_finetune, epoch)
         top1 = test(cmd_args, model, device, test_loader)
         if top1 > best_top1:
@@ -313,7 +322,9 @@ def setup_and_prune(cmd_args, params):
             # export finetuned model
 
     info = {}
-    info["value"] = best_top1
+    info["top1"] = best_top1 / 100
+    info["sparsity"] = prune_stats["sparsity"]
+    info["value"] = -(best_top1 / 100 + prune_stats["sparsity"])
     info["value_sigma"] = 1e-5
     return info
 
@@ -321,6 +332,9 @@ def setup_and_prune(cmd_args, params):
 def get_cmd_args():
     """ Get parameters from command line """
     parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--n_init", type=int, default=20, help="number of random design"
+    )
     parser.add_argument("--batch_size", type=int, default=256)
     parser.add_argument(
         "--pretrain_epochs",
@@ -361,7 +375,10 @@ def main():
         root = build_tree()
         ss = Storage()
         ker = build_addtree(root)
-        for i in range(20):
+        n_init = cmd_args.n_init
+        for i in range(n_init):
+            logger.info("=" * 50)
+            logger.info(f"Starting BO {i+1} iteration (Random Design)")
             path = root.random_path(rand_data=True)
             params = path2funcparam(path[1:])
             obj_info = setup_and_prune(cmd_args, params)
@@ -373,9 +390,11 @@ def main():
             )
             logger.info(f"Finishing BO {i+1} iteration")
             logger.info(params)
-            logger.info(obj_info["value"])
+            logger.info(obj_info)
 
         for i in range(300):
+            logger.info("=" * 50)
+            logger.info(f"Starting BO {i+1+n_init} iteration (Optimization)")
             gp = ss.optimize(ker, n_restart=2, verbose=False)
             _, _, x_best, path = optimize_acq(
                 LCB, root, gp, ss.Y, root.obs_dim, grid_size=500, nb_seed=5
@@ -389,9 +408,9 @@ def main():
                 obj_info["value_sigma"],
                 path=path,
             )
-            logger.info(f"Finishing BO {i+21} iteration")
+            logger.info(f"Finishing BO {i+1+n_init} iteration")
             logger.info(params)
-            logger.info(obj_info["value"])
+            logger.info(obj_info)
 
     except KeyboardInterrupt:
         print("Interrupted. You pressed Ctrl-C!!!")
