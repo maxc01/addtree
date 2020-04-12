@@ -19,26 +19,13 @@ from addtree.acq import optimize_acq, LCB
 from compression_common import testing_params
 from compression_common import do_prune
 from compression_common import train, test
+from compression_common import setup_logger
+from compression_common import get_data_loaders
+from compression_common import setup_and_prune
 from models.vgg import VGG
 
 logger = logging.getLogger("ModelCompression")
 logger.setLevel(logging.DEBUG)
-
-
-def setup_logger(filename):
-    ch = logging.StreamHandler()
-    ch.setLevel(logging.DEBUG)
-    fileHandler = logging.FileHandler(filename)
-    fileHandler.setLevel(logging.DEBUG)
-
-    formatter = logging.Formatter(
-        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-    )
-    ch.setFormatter(formatter)
-    fileHandler.setFormatter(formatter)
-    logger.addHandler(ch)
-    logger.addHandler(fileHandler)
-
 
 
 NAME2METHOD = {
@@ -113,110 +100,6 @@ def path2funcparam(path):
     return params
 
 
-def get_data_loaders(args):
-    transform_train = transforms.Compose(
-        [
-            transforms.RandomCrop(32, padding=4),
-            transforms.RandomHorizontalFlip(),
-            transforms.ToTensor(),
-            transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-        ]
-    )
-
-    transform_test = transforms.Compose(
-        [
-            transforms.ToTensor(),
-            transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-        ]
-    )
-
-    train_loader = torch.utils.data.DataLoader(
-        datasets.CIFAR10(
-            "../data", train=True, download=True, transform=transform_train
-        ),
-        batch_size=args.batch_size,
-        shuffle=True,
-        pin_memory=True,
-        num_workers=2,
-    )
-    test_loader = torch.utils.data.DataLoader(
-        datasets.CIFAR10("../data", train=False, transform=transform_test),
-        batch_size=args.test_batch_size,
-        shuffle=False,
-        pin_memory=True,
-        num_workers=2,
-    )
-
-    return train_loader, test_loader
-
-
-def setup_and_prune(cmd_args, params):
-    """compress a model
-
-    cmd_args: result from argparse
-    params: parameters used to build a pruner
-
-    """
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    os.makedirs(cmd_args.checkpoints_dir, exist_ok=True)
-
-    train_loader, test_loader = get_data_loaders(cmd_args)
-    model = VGG("VGG16").to(device=device)
-
-    logger.info("loading pretrained model {} ...".format(cmd_args.pretrained))
-    try:
-        model.load_state_dict(torch.load(cmd_args.pretrained))
-    except FileNotFoundError:
-        print("pretrained model doesn't exixt")
-        try:
-            sys.exit(0)
-        except SystemExit:
-            os._exit(0)
-
-    test(cmd_args, model, device, test_loader, logger)
-
-    logger.info("start model pruning...")
-
-    # op_names = ["conv1", "conv2", "fc1"]
-    # pruner_name = "_".join([params[op_name]["prune_method"] for op_name in op_names])
-    # model_path = os.path.join(
-    #     cmd_args.checkpoints_dir,
-    #     "pruned_{}_{}_{}.pth".format(model_name, dataset_name, pruner_name),
-    # )
-    # mask_path = os.path.join(
-    #     cmd_args.checkpoints_dir,
-    #     "mask_{}_{}_{}.pth".format(model_name, dataset_name, pruner_name),
-    # )
-
-    if isinstance(model, nn.DataParallel):
-        model = model.module
-
-    optimizer_finetune = torch.optim.SGD(
-        model.parameters(), lr=0.001, momentum=0.9, weight_decay=1e-4
-    )
-    best_top1 = 0
-
-    prune_stats = do_prune(model, params)
-
-    if cmd_args.multi_gpu and torch.cuda.device_count() > 1:
-        model = nn.DataParallel(model)
-
-    for epoch in range(cmd_args.prune_epochs):
-        logger.info("# Finetune Epoch {} #".format(epoch + 1))
-        train(cmd_args, model, device, train_loader, optimizer_finetune, epoch, logger)
-        top1 = test(cmd_args, model, device, test_loader, logger)
-        if top1 > best_top1:
-            best_top1 = top1
-            # export finetuned model
-
-    info = {}
-    info["top1"] = best_top1 / 100
-    info["sparsity"] = prune_stats["sparsity"]
-    info["value"] = -(best_top1 / 100 + prune_stats["sparsity"])
-    info["value_sigma"] = 1e-5
-    return info
-
-
 def get_cmd_args():
     """ Get parameters from command line """
     parser = argparse.ArgumentParser()
@@ -281,13 +164,13 @@ def main():
         ker = build_addtree(root)
         n_init = cmd_args.n_init
 
-        setup_logger("compression-vgg16-cifar.log")
+        setup_logger(logger, "compression-vgg16-cifar.log")
         for i in range(n_init):
             logger.info("=" * 50)
             logger.info(f"Starting BO {i+1} iteration (Random Design)")
             path = root.random_path(rand_data=True)
             params = path2funcparam(path[1:])
-            obj_info = setup_and_prune(cmd_args, params)
+            obj_info = setup_and_prune(cmd_args, params, logger)
             ss.add(
                 path.path2vec(root.obs_dim),
                 obj_info["value"],
@@ -303,27 +186,27 @@ def main():
             with open(fn_path, "w") as f:
                 json.dump(all_info, f)
 
-        for i in range(300):
+        for i in range(n_init, 300):
             logger.info("=" * 50)
-            logger.info(f"Starting BO {i+1+n_init} iteration (Optimization)")
+            logger.info(f"Starting BO {i+1} iteration (Optimization)")
             gp = ss.optimize(ker, n_restart=2, verbose=False)
             _, _, x_best, path = optimize_acq(
                 LCB, root, gp, ss.Y, root.obs_dim, grid_size=500, nb_seed=5
             )
             path.set_data(x_best)
             params = path2funcparam(path[1:])
-            obj_info = setup_and_prune(cmd_args, params)
+            obj_info = setup_and_prune(cmd_args, params, logger)
             ss.add(
                 path.path2vec(root.obs_dim),
                 obj_info["value"],
                 obj_info["value_sigma"],
                 path=path,
             )
-            logger.info(f"Finishing BO {i+1+n_init} iteration")
+            logger.info(f"Finishing BO {i+1} iteration")
             logger.info(params)
             logger.info(obj_info)
             all_info = {"iteration": i + 1, "params": params, "obj_info": obj_info}
-            fn_path = os.path.join(cmd_args.checkpoints_dir, f"iter_{i+1+n_init}.json")
+            fn_path = os.path.join(cmd_args.checkpoints_dir, f"iter_{i+1}.json")
             with open(fn_path, "w") as f:
                 json.dump(all_info, f)
 
