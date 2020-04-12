@@ -1,4 +1,5 @@
 import sys
+import json
 import os
 import argparse
 import logging
@@ -7,91 +8,77 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.nn.utils.prune as prune
-from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 
-from addtree.kernel_utils import build_addtree
-from addtree.storage import Storage
-from addtree.parameter import Parameter
-from addtree.parameter import ParameterNode
-from addtree.acq import optimize_acq, LCB
+from models.vgg import VGG
 
 logger = logging.getLogger("ModelCompression")
 logger.setLevel(logging.DEBUG)
 
-ch = logging.StreamHandler()
-ch.setLevel(logging.DEBUG)
-fileHandler = logging.FileHandler("model-compression.log")
-fileHandler.setLevel(logging.DEBUG)
 
-formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-ch.setFormatter(formatter)
-fileHandler.setFormatter(formatter)
-logger.addHandler(ch)
-logger.addHandler(fileHandler)
+def setup_logger(filename):
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.DEBUG)
+    fileHandler = logging.FileHandler(filename)
+    fileHandler.setLevel(logging.DEBUG)
+
+    formatter = logging.Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    )
+    ch.setFormatter(formatter)
+    fileHandler.setFormatter(formatter)
+    logger.addHandler(ch)
+    logger.addHandler(fileHandler)
 
 
-class NaiveModel(torch.nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.conv1 = nn.Conv2d(1, 20, 5, 1)
-        self.conv2 = nn.Conv2d(20, 50, 5, 1)
-        self.bn1 = nn.BatchNorm2d(self.conv1.out_channels)
-        self.bn2 = nn.BatchNorm2d(self.conv2.out_channels)
-        self.fc1 = nn.Linear(4 * 4 * 50, 500)
-        self.fc2 = nn.Linear(500, 10)
+def testing_params():
+    params = {}
+    params["b1"] = {}
+    params["b1"]["prune_method"] = "l1"
+    params["b1"]["amount"] = 0.5
+    params["b2"] = {}
+    params["b2"]["prune_method"] = "ln"
+    params["b2"]["amount"] = 0.5
+    params["b3"] = {}
+    params["b3"]["prune_method"] = "l1"
+    params["b3"]["amount"] = 0.3
 
-    def forward(self, x):
-        x = F.relu(self.bn1(self.conv1(x)))
-        x = F.max_pool2d(x, 2, 2)
-        x = F.relu(self.bn2(self.conv2(x)))
-        x = F.max_pool2d(x, 2, 2)
-        x = x.view(x.size(0), -1)
-        x = F.relu(self.fc1(x))
-        x = self.fc2(x)
-        return x
+    return params
 
 
 def do_prune(model, params):
-    names = ["conv1", "conv2", "fc1"]
+    """ prune model using params
+    params: ref. testing_params()
+    """
 
     def prune_module(module, method, amount):
         if method == "ln":
-            logger.addHandler(fileHandler)
             prune.ln_structured(module, name="weight", amount=amount, n=2, dim=0)
         elif method == "l1":
             prune.l1_unstructured(module, name="weight", amount=amount)
         else:
             raise ValueError(f"{method} is wrong")
 
+    fea_idx = {
+        "b1": [14, 17, 20],
+        "b2": [24, 27, 30],
+        "b3": [34, 37, 40],
+    }
     n1 = 0
     n2 = 0
-    for name in names:
-        module = getattr(model, name)
-        prune_module(module, params[name]["prune_method"], params[name]["amount"])
-        n1 += torch.sum(module.weight == 0)
-        n2 += module.weight.nelement()
+    for b_name in ["b1", "b2", "b3"]:
+        method = params[b_name]["prune_method"]
+        amount = params[b_name]["amount"]
+        for fid in fea_idx[b_name]:
+            module = model.features[fid]
+            prune_module(module, method, amount)
+            n1 += torch.sum(module.weight == 0)
+            n2 += module.weight.nelement()
     sparsity = float(n1) / n2
 
     info = {}
     info["sparsity"] = sparsity
     return info
-
-
-def testing_params():
-    params = {}
-    params["conv1"] = {}
-    params["conv1"]["prune_method"] = "l1"
-    params["conv1"]["amount"] = 0.5
-    params["conv2"] = {}
-    params["conv2"]["prune_method"] = "ln"
-    params["conv2"]["amount"] = 0.5
-    # NOTE: fc1's method can only be l1
-    params["fc1"] = {}
-    params["fc1"]["prune_method"] = "l1"
-    params["fc1"]["amount"] = 0.3
-
-    return params
 
 
 NAME2METHOD = {
@@ -102,9 +89,13 @@ NAME2METHOD = {
     "x5": "l1",
     "x6": "ln",
     "x7": "l1",
-    "x8": "l1",
+    "x8": "ln",
     "x9": "l1",
-    "x10": "l1",
+    "x10": "ln",
+    "x11": "l1",
+    "x12": "ln",
+    "x13": "l1",
+    "x14": "ln",
 }
 
 
@@ -120,9 +111,14 @@ def build_tree():
     x8 = ParameterNode(Parameter("x8", 1))
     x9 = ParameterNode(Parameter("x9", 1))
     x10 = ParameterNode(Parameter("x10", 1))
+    x11 = ParameterNode(Parameter("x11", 1))
+    x12 = ParameterNode(Parameter("x12", 1))
+    x13 = ParameterNode(Parameter("x13", 1))
+    x14 = ParameterNode(Parameter("x14", 1))
 
     root.add_child(x1)
     root.add_child(x2)
+
     x1.add_child(x3)
     x1.add_child(x4)
 
@@ -130,9 +126,16 @@ def build_tree():
     x2.add_child(x6)
 
     x3.add_child(x7)
-    x4.add_child(x8)
-    x5.add_child(x9)
-    x6.add_child(x10)
+    x3.add_child(x8)
+
+    x4.add_child(x9)
+    x4.add_child(x10)
+
+    x5.add_child(x11)
+    x5.add_child(x12)
+
+    x6.add_child(x13)
+    x6.add_child(x14)
 
     root.finish_add_child()
 
@@ -140,60 +143,48 @@ def build_tree():
 
 
 def path2funcparam(path):
-    op_names = ["conv1", "conv2", "fc1"]
+    b_names = ["b1", "b2", "b3"]
     params = {}
-    for op_name, node in zip(op_names, path):
-        params[op_name] = {}
-        params[op_name]["prune_method"] = NAME2METHOD[node.name]
-        params[op_name]["amount"] = node.parameter.data.item()
+    for b_name, node in zip(b_names, path):
+        params[b_name] = {}
+        params[b_name]["prune_method"] = NAME2METHOD[node.name]
+        params[b_name]["amount"] = node.parameter.data.item()
 
     return params
 
 
-def create_model(model_name="naive"):
-    assert model_name in ["naive", "vgg16", "vgg19"]
-
-    if model_name == "naive":
-        return NaiveModel()
-    elif model_name == "vgg16":
-        return VGG(16)
-    else:
-        return VGG(19)
-
-
-def get_data_loaders(dataset_name="mnist", batch_size=128):
-    assert dataset_name in ["cifar10", "mnist"]
-
-    if dataset_name == "cifar10":
-        ds_class = datasets.CIFAR10 if dataset_name == "cifar10" else datasets.MNIST
-        MEAN, STD = (0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)
-    else:
-        ds_class = datasets.MNIST
-        MEAN, STD = (0.1307,), (0.3081,)
-
-    train_loader = DataLoader(
-        ds_class(
-            "./data",
-            train=True,
-            download=True,
-            transform=transforms.Compose(
-                [transforms.ToTensor(), transforms.Normalize(MEAN, STD)]
-            ),
-        ),
-        batch_size=batch_size,
-        shuffle=True,
+def get_data_loaders(args):
+    transform_train = transforms.Compose(
+        [
+            transforms.RandomCrop(32, padding=4),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+        ]
     )
-    test_loader = DataLoader(
-        ds_class(
-            "./data",
-            train=False,
-            download=True,
-            transform=transforms.Compose(
-                [transforms.ToTensor(), transforms.Normalize(MEAN, STD)]
-            ),
+
+    transform_test = transforms.Compose(
+        [
+            transforms.ToTensor(),
+            transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+        ]
+    )
+
+    train_loader = torch.utils.data.DataLoader(
+        datasets.CIFAR10(
+            "../data", train=True, download=True, transform=transform_train
         ),
-        batch_size=batch_size,
+        batch_size=args.batch_size,
+        shuffle=True,
+        pin_memory=True,
+        num_workers=2,
+    )
+    test_loader = torch.utils.data.DataLoader(
+        datasets.CIFAR10("../data", train=False, transform=transform_test),
+        batch_size=args.test_batch_size,
         shuffle=False,
+        pin_memory=True,
+        num_workers=2,
     )
 
     return train_loader, test_loader
@@ -233,7 +224,6 @@ def test(args, model, device, test_loader):
             correct += pred.eq(target.view_as(pred)).sum().item()
 
     test_loss /= len(test_loader.dataset)
-
     accuracy = 100.0 * correct / len(test_loader.dataset)
 
     logger.info(
@@ -248,44 +238,27 @@ def test(args, model, device, test_loader):
 def setup_and_prune(cmd_args, params):
     """compress a model
 
+    cmd_args: result from argparse
     params: parameters used to build a pruner
-
-    params['conv1']['prune_method'] = 'level'
-    params['conv1']['sparsity'] = 0.5
-    params['conv2']['prune_method'] = 'level'
-    params['conv2']['sparsity'] = 0.5
-    params['fc1']['prune_method'] = 'agp'
-    params['fc1']['sparsity'] = 0.3
 
     """
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     os.makedirs(cmd_args.checkpoints_dir, exist_ok=True)
 
-    model_name = "naive"
-    dataset_name = "mnist"
-    train_loader, test_loader = get_data_loaders(dataset_name, cmd_args.batch_size)
-    model = create_model(model_name).to(device=device)
+    train_loader, test_loader = get_data_loaders(cmd_args)
+    model = VGG("VGG16").to(device=device)
 
-    if cmd_args.resume_from is not None and os.path.exists(cmd_args.resume_from):
-        logger.info("loading checkpoint {} ...".format(cmd_args.resume_from))
-        model.load_state_dict(torch.load(cmd_args.resume_from))
-        test(cmd_args, model, device, test_loader)
-    else:
-        optimizer = torch.optim.SGD(
-            model.parameters(), lr=0.1, momentum=0.9, weight_decay=1e-4
-        )
-        if cmd_args.multi_gpu and torch.cuda.device_count():
-            model = nn.DataParallel(model)
+    logger.info("loading pretrained model {} ...".format(cmd_args.pretrained))
+    try:
+        model.load_state_dict(torch.load(cmd_args.pretrained))
+    except FileNotFoundError:
+        print("pretrained model doesn't exixt")
+        try:
+            sys.exit(0)
+        except SystemExit:
+            os._exit(0)
 
-        logger.info("Model doesn't exist, start training fresh.")
-        pretrain_model_path = os.path.join(
-            cmd_args.checkpoints_dir,
-            "pretrain_{}_{}.pth".format(model_name, dataset_name),
-        )
-        for epoch in range(cmd_args.pretrain_epochs):
-            train(cmd_args, model, device, train_loader, optimizer, epoch)
-            test(cmd_args, model, device, test_loader)
-        torch.save(model.state_dict(), pretrain_model_path)
+    test(cmd_args, model, device, test_loader)
 
     logger.info("start model pruning...")
 
@@ -314,7 +287,7 @@ def setup_and_prune(cmd_args, params):
         model = nn.DataParallel(model)
 
     for epoch in range(cmd_args.prune_epochs):
-        logger.info("# Finetune Epoch {} #".format(epoch))
+        logger.info("# Finetune Epoch {} #".format(epoch + 1))
         train(cmd_args, model, device, train_loader, optimizer_finetune, epoch)
         top1 = test(cmd_args, model, device, test_loader)
         if top1 > best_top1:
@@ -333,17 +306,32 @@ def get_cmd_args():
     """ Get parameters from command line """
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--n_init", type=int, default=20, help="number of random design"
-    )
-    parser.add_argument("--batch_size", type=int, default=256)
-    parser.add_argument(
-        "--pretrain_epochs",
+        "--n_init",
         type=int,
-        default=10,
-        help="training epochs before model pruning",
+        default=20,
+        metavar="N",
+        help="number of random design (default: 20)",
     )
     parser.add_argument(
-        "--prune_epochs", type=int, default=5, help="training epochs for model pruning"
+        "--batch-size",
+        type=int,
+        default=64,
+        metavar="N",
+        help="input batch size for training (default: 64)",
+    )
+    parser.add_argument(
+        "--test-batch-size",
+        type=int,
+        default=1000,
+        metavar="N",
+        help="input batch size for testing (default: 1000)",
+    )
+    parser.add_argument(
+        "--prune_epochs",
+        type=int,
+        default=5,
+        metavar="N",
+        help="training epochs for model pruning (default: 5)",
     )
     parser.add_argument(
         "--checkpoints_dir",
@@ -352,7 +340,7 @@ def get_cmd_args():
         help="checkpoints directory",
     )
     parser.add_argument(
-        "--resume_from", type=str, default=None, help="pretrained model weights"
+        "--pretrained", type=str, default=None, help="pretrained model weights"
     )
     parser.add_argument(
         "--multi_gpu", action="store_true", help="Use multiple GPUs for training"
@@ -365,6 +353,7 @@ def get_cmd_args():
         help="how many batches to wait before logging training status",
     )
     args, _ = parser.parse_known_args()
+
     return args
 
 
@@ -376,6 +365,8 @@ def main():
         ss = Storage()
         ker = build_addtree(root)
         n_init = cmd_args.n_init
+
+        setup_logger("compression-vgg16-cifar.log")
         for i in range(n_init):
             logger.info("=" * 50)
             logger.info(f"Starting BO {i+1} iteration (Random Design)")
@@ -391,6 +382,11 @@ def main():
             logger.info(f"Finishing BO {i+1} iteration")
             logger.info(params)
             logger.info(obj_info)
+
+            all_info = {"iteration": i + 1, "params": params, "obj_info": obj_info}
+            fn_path = os.path.join(cmd_args.checkpoints_dir, f"iter_{i+1}.json")
+            with open(fn_path, "w") as f:
+                json.dump(all_info, f)
 
         for i in range(300):
             logger.info("=" * 50)
@@ -411,6 +407,10 @@ def main():
             logger.info(f"Finishing BO {i+1+n_init} iteration")
             logger.info(params)
             logger.info(obj_info)
+            all_info = {"iteration": i + 1, "params": params, "obj_info": obj_info}
+            fn_path = os.path.join(cmd_args.checkpoints_dir, f"iter_{i+1+n_init}.json")
+            with open(fn_path, "w") as f:
+                json.dump(all_info, f)
 
     except KeyboardInterrupt:
         print("Interrupted. You pressed Ctrl-C!!!")
