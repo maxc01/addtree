@@ -175,7 +175,7 @@ def main():
             logger.info(obj_info)
 
             all_info = {"iteration": i + 1, "params": params, "obj_info": obj_info}
-            fn_path = os.path.join(cmd_args.checkpoints_dir, f"iter_{i+1}.json")
+            fn_path = os.path.join(cmd_args.checkpoints_dir, f"addtree_iter_{i+1}.json")
             with open(fn_path, "w") as f:
                 json.dump(all_info, f)
 
@@ -199,7 +199,7 @@ def main():
             logger.info(params)
             logger.info(obj_info)
             all_info = {"iteration": i + 1, "params": params, "obj_info": obj_info}
-            fn_path = os.path.join(cmd_args.checkpoints_dir, f"iter_{i+1}.json")
+            fn_path = os.path.join(cmd_args.checkpoints_dir, f"addtree_iter_{i+1}.json")
             with open(fn_path, "w") as f:
                 json.dump(all_info, f)
 

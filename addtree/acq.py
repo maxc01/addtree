@@ -3,7 +3,7 @@ import numpy as np
 from scipy.optimize import minimize
 
 
-def LCB(gp, X_new, Y_train, kappa=1.0):
+def LCB(gp, X_new, Y_train, kappa=5.0):
     pred, pred_var = gp.predict(Y_train, X_new, return_var=True)
     pred_sigma = np.sqrt(pred_var)
     return pred - kappa * pred_sigma
