@@ -1,7 +1,15 @@
+import logging
+import os
+import sys
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torchvision import datasets, transforms
 import torch.nn.utils.prune as prune
+
+
+from models.vgg import VGG
 
 
 def testing_params():
@@ -97,3 +105,131 @@ def test(args, model, device, test_loader, main_logger):
     )
 
     return accuracy
+
+
+def get_data_loaders(args):
+    transform_train = transforms.Compose(
+        [
+            transforms.RandomCrop(32, padding=4),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+        ]
+    )
+
+    transform_test = transforms.Compose(
+        [
+            transforms.ToTensor(),
+            transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+        ]
+    )
+
+    train_loader = torch.utils.data.DataLoader(
+        datasets.CIFAR10(
+            "../data", train=True, download=True, transform=transform_train
+        ),
+        batch_size=args.batch_size,
+        shuffle=True,
+        pin_memory=True,
+        num_workers=2,
+    )
+    test_loader = torch.utils.data.DataLoader(
+        datasets.CIFAR10("../data", train=False, transform=transform_test),
+        batch_size=args.test_batch_size,
+        shuffle=False,
+        pin_memory=True,
+        num_workers=2,
+    )
+
+    return train_loader, test_loader
+
+
+def setup_logger(main_logger, filename):
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.DEBUG)
+    fileHandler = logging.FileHandler(filename)
+    fileHandler.setLevel(logging.DEBUG)
+
+    formatter = logging.Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    )
+    ch.setFormatter(formatter)
+    fileHandler.setFormatter(formatter)
+    main_logger.addHandler(ch)
+    main_logger.addHandler(fileHandler)
+
+
+def setup_and_prune(cmd_args, params, main_logger):
+    """compress a model
+
+    cmd_args: result from argparse
+    params: parameters used to build a pruner
+
+    """
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    os.makedirs(cmd_args.checkpoints_dir, exist_ok=True)
+
+    train_loader, test_loader = get_data_loaders(cmd_args)
+    model = VGG("VGG16").to(device=device)
+
+    main_logger.info("Loading pretrained model {} ...".format(cmd_args.pretrained))
+    try:
+        model.load_state_dict(torch.load(cmd_args.pretrained))
+    except FileNotFoundError:
+        print("Pretrained model doesn't exixt")
+        try:
+            sys.exit(0)
+        except SystemExit:
+            os._exit(0)
+
+    main_logger.info("Testing pretrained model...")
+    test(cmd_args, model, device, test_loader, main_logger)
+
+    main_logger.info("start model pruning...")
+
+    # op_names = ["conv1", "conv2", "fc1"]
+    # pruner_name = "_".join([params[op_name]["prune_method"] for op_name in op_names])
+    # model_path = os.path.join(
+    #     cmd_args.checkpoints_dir,
+    #     "pruned_{}_{}_{}.pth".format(model_name, dataset_name, pruner_name),
+    # )
+    # mask_path = os.path.join(
+    #     cmd_args.checkpoints_dir,
+    #     "mask_{}_{}_{}.pth".format(model_name, dataset_name, pruner_name),
+    # )
+
+    if isinstance(model, nn.DataParallel):
+        model = model.module
+
+    optimizer_finetune = torch.optim.SGD(
+        model.parameters(), lr=0.001, momentum=0.9, weight_decay=1e-4
+    )
+    best_top1 = 0
+
+    prune_stats = do_prune(model, params)
+
+    if cmd_args.multi_gpu and torch.cuda.device_count() > 1:
+        model = nn.DataParallel(model)
+
+    for epoch in range(cmd_args.prune_epochs):
+        main_logger.info("# Finetune Epoch {} #".format(epoch + 1))
+        train(
+            cmd_args,
+            model,
+            device,
+            train_loader,
+            optimizer_finetune,
+            epoch,
+            main_logger,
+        )
+        top1 = test(cmd_args, model, device, test_loader, main_logger)
+        if top1 > best_top1:
+            best_top1 = top1
+            # export finetuned model
+
+    info = {}
+    info["top1"] = best_top1 / 100
+    info["sparsity"] = prune_stats["sparsity"]
+    info["value"] = -(best_top1 / 100 + prune_stats["sparsity"])
+    info["value_sigma"] = 1e-5
+    return info
