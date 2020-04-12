@@ -218,6 +218,7 @@ def main():
 
     try:
         cmd_args = get_cmd_args()
+        os.makedirs(cmd_args.checkpoints_dir, exist_ok=True)
         log_path = os.path.join(
             cmd_args.checkpoints_dir, "SMAC-model-compression-vgg16.log"
         )

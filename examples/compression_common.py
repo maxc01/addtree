@@ -167,7 +167,6 @@ def setup_and_prune(cmd_args, params, main_logger):
 
     """
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    os.makedirs(cmd_args.checkpoints_dir, exist_ok=True)
 
     train_loader, test_loader = get_data_loaders(cmd_args)
     model = VGG("VGG16").to(device=device)
