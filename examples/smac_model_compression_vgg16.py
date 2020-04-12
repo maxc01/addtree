@@ -1,40 +1,25 @@
 import sys
-import queue
 import json
 import os
-import time
 import argparse
 import logging
 
 import numpy as np
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.nn.utils.prune as prune
-from torchvision import datasets, transforms
 
-from models.vgg import VGG
-from compression_common import testing_params
-from compression_common import do_prune
-from compression_common import train, test
 from compression_common import setup_logger
-from compression_common import get_data_loaders
 from compression_common import setup_and_prune
 
 
 # Import ConfigSpace and different types of parameters
 from smac.configspace import ConfigurationSpace
-from smac.initial_design.default_configuration_design import DefaultConfiguration
 from smac.initial_design.random_configuration_design import RandomConfigurations
 from ConfigSpace.hyperparameters import (
     CategoricalHyperparameter,
     UniformFloatHyperparameter,
-    UniformIntegerHyperparameter,
 )
 from ConfigSpace.conditions import InCondition
 
 # Import SMAC-utilities
-from smac.tae.execute_func import ExecuteTAFuncDict
 from smac.scenario.scenario import Scenario
 
 # from smac.facade.smac_facade import SMAC

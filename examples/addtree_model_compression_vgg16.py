@@ -4,28 +4,14 @@ import os
 import argparse
 import logging
 
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.nn.utils.prune as prune
-from torchvision import datasets, transforms
-
 from addtree.kernel_utils import build_addtree
 from addtree.storage import Storage
 from addtree.parameter import Parameter
 from addtree.parameter import ParameterNode
 from addtree.acq import optimize_acq, LCB
 
-from compression_common import testing_params
-from compression_common import do_prune
-from compression_common import train, test
 from compression_common import setup_logger
-from compression_common import get_data_loaders
 from compression_common import setup_and_prune
-from models.vgg import VGG
-
-logger = logging.getLogger("ModelCompression")
-logger.setLevel(logging.DEBUG)
 
 
 NAME2METHOD = {
@@ -156,15 +142,22 @@ def get_cmd_args():
 
 
 def main():
+    logger = logging.getLogger("addtree-model-compression-vgg16")
+    logger.setLevel(logging.DEBUG)
+
     try:
         cmd_args = get_cmd_args()
+        os.makedirs(cmd_args.checkpoints_dir, exist_ok=True)
+        log_path = os.path.join(
+            cmd_args.checkpoints_dir, "addtree-model-compression-vgg16.log"
+        )
+        setup_logger(logger, log_path)
 
         root = build_tree()
         ss = Storage()
         ker = build_addtree(root)
         n_init = cmd_args.n_init
 
-        setup_logger(logger, "compression-vgg16-cifar.log")
         for i in range(n_init):
             logger.info("=" * 50)
             logger.info(f"Starting BO {i+1} iteration (Random Design)")
