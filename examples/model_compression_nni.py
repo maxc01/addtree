@@ -188,7 +188,7 @@ def compress(cmd_args, params):
 
     """
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    os.makedirs(cmd_args.checkpoints_dir, exist_ok=True)
+    # os.makedirs(cmd_args.checkpoints_dir, exist_ok=True)
 
     model_name = "naive"
     dataset_name = "mnist"

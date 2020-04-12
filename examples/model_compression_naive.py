@@ -239,7 +239,6 @@ def setup_and_prune(cmd_args, params):
 
     """
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    os.makedirs(cmd_args.checkpoints_dir, exist_ok=True)
 
     model_name = cmd_args.model_name
     dataset_name = cmd_args.dataset_name
