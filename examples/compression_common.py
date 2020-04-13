@@ -288,7 +288,7 @@ def setup_and_prune(cmd_args, params, main_logger, prune_type="single"):
     info["top1"] = best_top1 / 100
     info["sparsity"] = prune_stats["sparsity"]
     info["value"] = -(best_top1 / 100 + prune_stats["sparsity"])
-    info["value_sigma"] = 1e-5
+    info["value_sigma"] = 0.25
     return info
 
 
