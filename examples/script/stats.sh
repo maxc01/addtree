@@ -1,13 +1,25 @@
 #!/usr/bin/env bash
 
-echo SMAC info
-perl ./script/parse_line.pl ./checkpoints_smac/smac_iter_hists.txt
+echo ==========
+echo SMAC single
+perl ./script/parse_line.pl $(fd hists smac-single)
 
 echo ==========
-echo RANDOM info
-perl ./script/parse_line.pl ./checkpoints_random/random_iter_*.txt
+echo ADDTREE single
+perl ./script/parse_line.pl $(fd json addtree-single)
 
 echo ==========
-echo ADDTREE info
-perl ./script/parse_line.pl ./checkpoints_addtree/addtree_iter_*.json
+echo ADDTREE multiple
+perl ./script/parse_line.pl $(fd json addtree-multiple)
 
+echo ==========
+echo RANDOM single
+perl ./script/parse_line.pl $(fd txt random-single)
+
+echo ==========
+echo RANDOM multiple
+perl ./script/parse_line.pl $(fd txt random-multiple)
+
+echo ==========
+echo TPE multiple
+perl ./script/parse_line.pl $(fd hists tpe-multiple)
