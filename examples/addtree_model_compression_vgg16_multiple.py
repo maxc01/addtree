@@ -108,6 +108,7 @@ def main():
         root = build_tree()
         ss = Storage()
         ker = build_addtree(root)
+        ker = 1. * ker
         n_init = cmd_args.n_init
 
         for i in range(n_init):
@@ -119,7 +120,7 @@ def main():
             ss.add(
                 path.path2vec(root.obs_dim),
                 obj_info["value"],
-                obj_info["value_sigma"],
+                0.31,
                 path,
             )
             logger.info(f"Finishing BO {i+1} iteration")
@@ -144,7 +145,7 @@ def main():
             ss.add(
                 path.path2vec(root.obs_dim),
                 obj_info["value"],
-                obj_info["value_sigma"],
+                0.31,
                 path=path,
             )
             logger.info(f"Finishing BO {i+1} iteration")
