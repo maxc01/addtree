@@ -95,7 +95,7 @@ def main():
     logger.setLevel(logging.DEBUG)
 
     try:
-        cmd_args = get_common_cmd_args()
+        cmd_args, _ = get_common_cmd_args()
         expid = get_experiment_id(6)
         output_dir = os.path.join(EXP_BASEDIR, expid)
         os.makedirs(output_dir, exist_ok=True)
