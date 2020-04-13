@@ -12,7 +12,7 @@ def LCB(gp, X_new, Y_train, kappa=5.0):
 def optimize_acq(acq_func, root, gp, Y_train, total_dim, grid_size=100, nb_seed=2):
 
     info = []
-    for path_id in ["000", "001", "010", "011", "100", "101", "110", "111"]:
+    for path_id in root.all_pathids():
         path = root.select_path(path_id)
         eff_axes = path.axes()
         grid = path.rand(grid_size, total_dim)

@@ -144,6 +144,19 @@ class ParameterNode:
             for child in node.children:
                 bfs_queue.append(child)
 
+    def _dfs(self, func=None, *func_args, **func_kwargs):
+        """pre-order DFS
+        """
+
+        def preorder(node):
+            # visit node and do something
+            if callable(func):
+                func(node, *func_args, **func_kwargs)
+            for child in self.children:
+                preorder(child)
+
+        preorder(self)
+
     def is_leaf(self):
         return len(self.children) == 0
 
@@ -193,6 +206,23 @@ class ParameterNode:
             cur = cur.children[local_id]
 
         return NodePath(path)
+
+    def all_pathids(self) -> Sequence[str]:
+        pathids = []
+
+        def preorder(node, cur_ids):
+            cur_ids.append(str(node.local_id))
+            if node.is_leaf():
+                pathids.append("".join(cur_ids[1:]))
+            for child in node.children:
+                preorder(child, cur_ids)
+
+            cur_ids.pop()
+
+        cur_ids = []
+        preorder(self, cur_ids)
+
+        return pathids
 
     def path_from_keys(self, keys) -> Sequence["ParameterNode"]:
         path = [self]

@@ -22,6 +22,29 @@ def small_tree1():
     return root, x1, x2
 
 
+@pytest.fixture
+def large_tree():
+    clear_state()
+    root = ParameterNode(Parameter("root", 0))
+    x1 = ParameterNode(Parameter("x1", 1))
+    x2 = ParameterNode(Parameter("x2", 1))
+    root.add_child(x1)
+    root.add_child(x2)
+    x3 = ParameterNode(Parameter("x3", 1))
+    x4 = ParameterNode(Parameter("x4", 1))
+    x1.add_child(x3)
+    x1.add_child(x4)
+
+    x5 = ParameterNode(Parameter("x5", 1))
+    x6 = ParameterNode(Parameter("x6", 1))
+    x2.add_child(x5)
+    x2.add_child(x6)
+
+    root.finish_add_child()
+
+    return root
+
+
 def test_bfs_template(small_tree1):
     root = small_tree1[0]
     assert len(root.bfs_template) == 10
@@ -85,3 +108,14 @@ def test_select_path(small_tree1):
     path2 = root.select_path("1")
     assert path2[0] == root
     assert path2[1] == x2
+
+
+def test_all_pathids(small_tree1):
+    root, x1, x2 = small_tree1
+
+    assert root.all_pathids() == ["0", "1"]
+
+
+def test_all_pathids_large(large_tree):
+    root = large_tree
+    assert root.all_pathids() == ["00", "01", "10", "11"]
