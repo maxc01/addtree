@@ -18,6 +18,7 @@ from smac_utils import cs_single
 
 # Import SMAC-utilities
 from smac.scenario.scenario import Scenario
+from smac.initial_design.random_configuration_design import RandomConfigurations
 
 # from smac.facade.smac_facade import SMAC
 from smac.facade.smac_hpo_facade import SMAC4HPO
