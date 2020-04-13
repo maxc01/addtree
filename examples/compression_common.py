@@ -27,6 +27,21 @@ def testing_params():
     return params
 
 
+def testing_params_multiple():
+    params = {}
+    params["b1"] = {}
+    params["b1"]["prune_method"] = "l1"
+    params["b1"]["amount"] = [0.5, 0.5, 0.5]
+    params["b2"] = {}
+    params["b2"]["prune_method"] = "ln"
+    params["b2"]["amount"] = [0.1, 0.2, 0.3]
+    params["b3"] = {}
+    params["b3"]["prune_method"] = "l1"
+    params["b3"]["amount"] = [0.1, 0.2, 0.3]
+
+    return params
+
+
 def do_prune(model, params):
     """ prune model using params
     params: ref. testing_params()
@@ -53,6 +68,41 @@ def do_prune(model, params):
         for fid in fea_idx[b_name]:
             module = model.features[fid]
             prune_module(module, method, amount)
+            n1 += torch.sum(module.weight == 0)
+            n2 += module.weight.nelement()
+    sparsity = float(n1) / n2
+
+    info = {}
+    info["sparsity"] = sparsity
+    return info
+
+
+def do_prune_multiple(model, params):
+    """ layers in each block have different prune parameters
+    params: ref. testing_params_multiple()
+    """
+
+    def prune_module(module, method, amount):
+        if method == "ln":
+            prune.ln_structured(module, name="weight", amount=amount, n=2, dim=0)
+        elif method == "l1":
+            prune.l1_unstructured(module, name="weight", amount=amount)
+        else:
+            raise ValueError(f"{method} is wrong")
+
+    fea_idx = {
+        "b1": [14, 17, 20],
+        "b2": [24, 27, 30],
+        "b3": [34, 37, 40],
+    }
+    n1 = 0
+    n2 = 0
+    for b_name in ["b1", "b2", "b3"]:
+        method = params[b_name]["prune_method"]
+        amount = params[b_name]["amount"]
+        for idx, fid in enumerate(fea_idx[b_name]):
+            module = model.features[fid]
+            prune_module(module, method, amount[idx])
             n1 += torch.sum(module.weight == 0)
             n2 += module.weight.nelement()
     sparsity = float(n1) / n2
@@ -159,13 +209,15 @@ def setup_logger(main_logger, filename):
     main_logger.addHandler(fileHandler)
 
 
-def setup_and_prune(cmd_args, params, main_logger):
+def setup_and_prune(cmd_args, params, main_logger, prune_type="single"):
     """compress a model
 
     cmd_args: result from argparse
     params: parameters used to build a pruner
 
     """
+    assert prune_type in ["single", "multiple"]
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     train_loader, test_loader = get_data_loaders(cmd_args)
@@ -205,7 +257,10 @@ def setup_and_prune(cmd_args, params, main_logger):
     )
     best_top1 = 0
 
-    prune_stats = do_prune(model, params)
+    if prune_type == "single":
+        prune_stats = do_prune(model, params)
+    else:
+        prune_stats = do_prune_multiple(model, params)
 
     if cmd_args.multi_gpu and torch.cuda.device_count() > 1:
         model = nn.DataParallel(model)
