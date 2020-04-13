@@ -23,7 +23,6 @@ def optimize_acq(acq_func, root, gp, Y_train, total_dim, grid_size=100, nb_seed=
         seeds = grid[ixgrid]
 
         def obj_func_acq(x):
-            # vec = fill_x(x, root.obs_dim, eff_axes)
             vec = path.set_data(x).path2vec(root.obs_dim)
             return acq_func(gp, vec[None], Y_train).item()
 
@@ -35,6 +34,7 @@ def optimize_acq(acq_func, root, gp, Y_train, total_dim, grid_size=100, nb_seed=
             if result.fun < _y_best:
                 _y_best = result.fun
                 _x_best = result.x
+                _x_best = np.clip(_x_best, *zip(*bounds))
         heapq.heappush(info, (_y_best, path_id, _x_best, path))
 
     return info[0]
