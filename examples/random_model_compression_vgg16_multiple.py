@@ -314,7 +314,7 @@ def main():
                 "obj_info": obj_info,
             }
             fn_path = os.path.join(
-                cmd_args.checkpoints_dir, f"random_iter_{opt_iter}.txt"
+                output_dir, f"random_iter_{opt_iter}.txt"
             )
             with open(fn_path, "w") as f:
                 json.dump(all_info, f)

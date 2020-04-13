@@ -1,6 +1,9 @@
 import logging
+from datetime import datetime
 import os
 import sys
+import math
+import argparse
 
 import torch
 import torch.nn as nn
@@ -287,3 +290,75 @@ def setup_and_prune(cmd_args, params, main_logger, prune_type="single"):
     info["value"] = -(best_top1 / 100 + prune_stats["sparsity"])
     info["value_sigma"] = 1e-5
     return info
+
+
+def search_constant_params(kernel):
+    pnames = []
+    for pname in kernel.get_parameter_names():
+        if "log_constant" in pname:
+            pnames.append(pname)
+    return pnames
+
+
+def freeze_constant_params(kernel):
+    for pname in search_constant_params(kernel):
+        kernel.freeze_parameter(pname)
+
+
+def get_common_cmd_args():
+    """ Get parameters from command line
+
+    common for all compression, including random, smac, and adtree
+    """
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--n_init",
+        type=int,
+        default=20,
+        metavar="N",
+        help="number of random design (default: 20)",
+    )
+    parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=128,
+        metavar="N",
+        help="input batch size for training (default: 128)",
+    )
+    parser.add_argument(
+        "--test-batch-size",
+        type=int,
+        default=1000,
+        metavar="N",
+        help="input batch size for testing (default: 1000)",
+    )
+    parser.add_argument(
+        "--prune_epochs",
+        type=int,
+        default=3,
+        metavar="N",
+        help="training epochs for model pruning (default: 3)",
+    )
+    # parser.add_argument(
+    #     "--checkpoints_dir",
+    #     type=str,
+    #     default="./checkpoints",
+    #     help="checkpoints directory",
+    # )
+    parser.add_argument(
+        "--pretrained", type=str, default=None, help="pretrained model weights"
+    )
+    parser.add_argument(
+        "--multi_gpu", action="store_true", help="Use multiple GPUs for training"
+    )
+    parser.add_argument(
+        "--log_interval",
+        type=int,
+        default=100,
+        metavar="N",
+        help="how many batches to wait before logging training status",
+    )
+    args, extra = parser.parse_known_args()
+
+    return args, extra
+

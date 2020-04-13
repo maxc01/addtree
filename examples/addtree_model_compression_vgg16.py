@@ -12,6 +12,9 @@ from addtree.acq import optimize_acq, LCB
 
 from compression_common import setup_logger
 from compression_common import setup_and_prune
+from compression_common import freeze_constant_params
+from compression_common import get_common_cmd_args
+from compression_common import get_experiment_id
 
 
 NAME2METHOD = {
@@ -86,71 +89,17 @@ def path2funcparam(path):
     return params
 
 
-def get_cmd_args():
-    """ Get parameters from command line """
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--n_init",
-        type=int,
-        default=20,
-        metavar="N",
-        help="number of random design (default: 20)",
-    )
-    parser.add_argument(
-        "--batch-size",
-        type=int,
-        default=128,
-        metavar="N",
-        help="input batch size for training (default: 128)",
-    )
-    parser.add_argument(
-        "--test-batch-size",
-        type=int,
-        default=1000,
-        metavar="N",
-        help="input batch size for testing (default: 1000)",
-    )
-    parser.add_argument(
-        "--prune_epochs",
-        type=int,
-        default=5,
-        metavar="N",
-        help="training epochs for model pruning (default: 5)",
-    )
-    parser.add_argument(
-        "--checkpoints_dir",
-        type=str,
-        default="./checkpoints",
-        help="checkpoints directory",
-    )
-    parser.add_argument(
-        "--pretrained", type=str, default=None, help="pretrained model weights"
-    )
-    parser.add_argument(
-        "--multi_gpu", action="store_true", help="Use multiple GPUs for training"
-    )
-    parser.add_argument(
-        "--log_interval",
-        type=int,
-        default=100,
-        metavar="N",
-        help="how many batches to wait before logging training status",
-    )
-    args, _ = parser.parse_known_args()
-
-    return args
-
-
 def main():
+    EXP_BASEDIR = "addtree-single"
     logger = logging.getLogger("addtree-model-compression-vgg16")
     logger.setLevel(logging.DEBUG)
 
     try:
-        cmd_args = get_cmd_args()
-        os.makedirs(cmd_args.checkpoints_dir, exist_ok=True)
-        log_path = os.path.join(
-            cmd_args.checkpoints_dir, "addtree-model-compression-vgg16.log"
-        )
+        cmd_args = get_common_cmd_args()
+        expid = get_experiment_id(6)
+        output_dir = os.path.join(EXP_BASEDIR, expid)
+        os.makedirs(output_dir, exist_ok=True)
+        log_path = os.path.join(output_dir, "addtree-model-compression-vgg16.log")
         setup_logger(logger, log_path)
 
         root = build_tree()
@@ -175,7 +124,7 @@ def main():
             logger.info(obj_info)
 
             all_info = {"iteration": i + 1, "params": params, "obj_info": obj_info}
-            fn_path = os.path.join(cmd_args.checkpoints_dir, f"addtree_iter_{i+1}.json")
+            fn_path = os.path.join(output_dir, f"addtree_iter_{i+1}.json")
             with open(fn_path, "w") as f:
                 json.dump(all_info, f)
 
@@ -199,7 +148,7 @@ def main():
             logger.info(params)
             logger.info(obj_info)
             all_info = {"iteration": i + 1, "params": params, "obj_info": obj_info}
-            fn_path = os.path.join(cmd_args.checkpoints_dir, f"addtree_iter_{i+1}.json")
+            fn_path = os.path.join(output_dir, f"addtree_iter_{i+1}.json")
             with open(fn_path, "w") as f:
                 json.dump(all_info, f)
 
