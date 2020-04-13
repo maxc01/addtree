@@ -41,7 +41,7 @@ class Storage:
     def optimize(self, kernel, n_restart=1, verbose=False):
         gp = george.GP(kernel, mean=self.Y.mean())
         gp.compute(self.X, self.Yerr)
-        
+
         if verbose:
             print("Initial ln-likelihood: {0:.2f}".format(gp.log_likelihood(self.Y)))
 

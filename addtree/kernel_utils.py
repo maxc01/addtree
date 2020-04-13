@@ -24,3 +24,7 @@ def build_addtree(root):
 
     return kernel
 
+
+def get_const_kernel(c, ndim):
+    c = K.ConstantKernel(-0.69, ndim=ndim, bounds=[(-7.0, 4.0)])
+    return c

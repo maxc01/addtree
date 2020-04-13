@@ -5,6 +5,7 @@ import argparse
 import logging
 
 from addtree.kernel_utils import build_addtree
+from addtree.kernel_utils import get_const_kernel
 from addtree.storage import Storage
 from addtree.parameter import Parameter
 from addtree.parameter import ParameterNode
@@ -108,7 +109,8 @@ def main():
         root = build_tree()
         ss = Storage()
         ker = build_addtree(root)
-        ker = 1. * ker
+        const_ker = get_const_kernel(-0.69, root.obs_dim)
+        ker = const_ker * ker
         n_init = cmd_args.n_init
 
         for i in range(n_init):
