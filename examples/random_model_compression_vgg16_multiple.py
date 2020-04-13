@@ -7,6 +7,9 @@ import logging
 
 from compression_common import setup_logger
 from compression_common import setup_and_prune
+from compression_common import get_common_cmd_args
+from compression_common import get_experiment_id
+from smac_utils import cfg2funcparams_multiple
 
 # Import ConfigSpace and different types of parameters
 from smac.configspace import ConfigurationSpace
@@ -198,111 +201,22 @@ cs.add_condition(InCondition(r14_3, x6, ["ln"]))
 #
 
 
-def cfg2funcparams(cfg):
-    """
-    Configuration:
-    r1, Value: 0.5371703233713245
-    r10, Value: 0.32063392742881947
-    r4, Value: 0.91056232889749
-    root, Value: 'l1'
-    x1, Value: 'ln'
-    x4, Value: 'ln'
-    """
-
-    def extract_using_prefix(keys):
-        """this function extract ONE value with key in keys from cfg
-        keys: e.g. ["r1","r2"]
-        """
-
-        cfg_prefix = set([i.split("_")[0] for i in cfg.keys()])
-        # e.g. r1->[r1_1, r1_2, r1_3]
-        for k in keys:
-            if k in cfg_prefix:
-                return [cfg[k + "_1"], cfg[k + "_2"], cfg[k + "_3"]]
-        raise RuntimeError("key not exist")
-
-    params = {}
-    params["b1"] = {}
-    params["b1"]["prune_method"] = cfg["root"]
-    params["b1"]["amount"] = extract_using_prefix(["r1", "r2"])
-
-    params["b2"] = {}
-    params["b2"]["prune_method"] = "ln"
-    params["b2"]["amount"] = extract_using_prefix(["r3", "r4", "r5", "r6"])
-
-    params["b3"] = {}
-    params["b3"]["prune_method"] = "l1"
-    params["b3"]["amount"] = extract_using_prefix(
-        ["r7", "r8", "r9", "r10", "r11", "r12", "r13", "r14",]
-    )
-
-    return params
-
-
-def get_cmd_args():
-    """ Get parameters from command line """
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--checkpoints_dir",
-        type=str,
-        default="./checkpoints",
-        help="checkpoints directory",
-    )
-    parser.add_argument(
-        "--batch-size",
-        type=int,
-        default=128,
-        metavar="N",
-        help="input batch size for training (default: 128)",
-    )
-    parser.add_argument(
-        "--test-batch-size",
-        type=int,
-        default=1000,
-        metavar="N",
-        help="input batch size for testing (default: 1000)",
-    )
-    parser.add_argument(
-        "--prune_epochs",
-        type=int,
-        default=5,
-        metavar="N",
-        help="training epochs for model pruning (default: 5)",
-    )
-    parser.add_argument(
-        "--pretrained", type=str, default=None, help="pretrained model weights"
-    )
-    parser.add_argument(
-        "--multi_gpu", action="store_true", help="Use multiple GPUs for training"
-    )
-    parser.add_argument(
-        "--log_interval",
-        type=int,
-        default=100,
-        metavar="N",
-        help="how many batches to wait before logging training status",
-    )
-    args, _ = parser.parse_known_args()
-
-    return args
-
-
 def main():
+    EXP_BASEDIR = "random-multiple"
     logger = logging.getLogger("random-model-compression-vgg16")
     logger.setLevel(logging.DEBUG)
 
     try:
-        cmd_args = get_cmd_args()
-        output_dir = cmd_args.checkpoints_dir + datetime.now().strftime(
-            "-%Y-%m-%d-%H:%M:%S"
-        )
-        os.makedirs(output_dir, exist_ok=False)
+        cmd_args, _ = get_common_cmd_args()
+        expid = get_experiment_id(6)
+        output_dir = os.path.join(EXP_BASEDIR, expid)
+        os.makedirs(output_dir, exist_ok=True)
         log_path = os.path.join(output_dir, "random-model-compression-vgg16.log")
         setup_logger(logger, log_path)
 
         def obj_func(cfg, opt_iter):
             logger.info("Starting BO iteration")
-            params = cfg2funcparams(cfg)
+            params = cfg2funcparams_multiple(cfg)
             obj_info = setup_and_prune(cmd_args, params, logger, prune_type="multiple")
             logger.info("Finishing BO iteration")
             logger.info(params)
@@ -313,9 +227,7 @@ def main():
                 "params": params,
                 "obj_info": obj_info,
             }
-            fn_path = os.path.join(
-                output_dir, f"random_iter_{opt_iter}.txt"
-            )
+            fn_path = os.path.join(output_dir, f"random_iter_{opt_iter}.txt")
             with open(fn_path, "w") as f:
                 json.dump(all_info, f)
 
