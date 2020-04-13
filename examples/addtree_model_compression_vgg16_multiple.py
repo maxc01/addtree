@@ -185,9 +185,9 @@ def main():
         for i in range(n_init, 300):
             logger.info("=" * 50)
             logger.info(f"Starting BO {i+1} iteration (Optimization)")
-            gp = ss.optimize(ker, n_restart=2, verbose=False)
+            gp = ss.optimize(ker, n_restart=5, verbose=False)
             _, _, x_best, path = optimize_acq(
-                LCB, root, gp, ss.Y, root.obs_dim, grid_size=500, nb_seed=5
+                LCB, root, gp, ss.Y, root.obs_dim, grid_size=2000, nb_seed=8
             )
             path.set_data(x_best)
             params = path2funcparam(path[1:])

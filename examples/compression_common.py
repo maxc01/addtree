@@ -149,7 +149,7 @@ def test(args, model, device, test_loader, main_logger):
     accuracy = 100.0 * correct / len(test_loader.dataset)
 
     main_logger.info(
-        "\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n".format(
+        "Test set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n".format(
             test_loss, correct, len(test_loader.dataset), accuracy
         )
     )
