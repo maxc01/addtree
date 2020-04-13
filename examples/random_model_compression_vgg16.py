@@ -127,11 +127,11 @@ def cfg2funcparams(cfg):
     params["b1"]["amount"] = extract_one_value(["r1", "r2"])
 
     params["b2"] = {}
-    params["b2"]["prune_method"] = "ln"
+    params["b2"]["prune_method"] = extract_one_value(["x1", "x2"])
     params["b2"]["amount"] = extract_one_value(["r3", "r4", "r5", "r6"])
 
     params["b3"] = {}
-    params["b3"]["prune_method"] = "l1"
+    params["b3"]["prune_method"] = extract_one_value(["x3", "x4", "x5", "x6"])
     params["b3"]["amount"] = extract_one_value(
         ["r7", "r8", "r9", "r10", "r11", "r12", "r13", "r14",]
     )
