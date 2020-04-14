@@ -19,3 +19,11 @@ clean:
 info:
 	bash ./script/stats.sh
 
+
+.PHONY: collect_multiple
+collect_multiple:
+	@bash ./script/collect_multiple.sh
+
+.PHONY: collect_single
+collect_single:
+	@bash ./script/collect_single.sh

@@ -116,7 +116,7 @@ def main():
             ss.add(
                 path.path2vec(root.obs_dim),
                 obj_info["value"],
-                obj_info["value_sigma"],
+                0.2,
                 path,
             )
             logger.info(f"Finishing BO {i+1} iteration")
@@ -141,7 +141,7 @@ def main():
             ss.add(
                 path.path2vec(root.obs_dim),
                 obj_info["value"],
-                obj_info["value_sigma"],
+                0.2,
                 path=path,
             )
             logger.info(f"Finishing BO {i+1} iteration")
