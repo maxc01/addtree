@@ -37,7 +37,7 @@ def optimize_acq(
         grid = path.rand(grid_size, total_dim, quasi=quasi)
         grid_acq = acq_func(gp, grid, Y_train, kappa=kappa)
         seeds_idx = np.argsort(grid_acq)[:nb_seed]
-        bounds = [(0.01, 0.9999)] * len(eff_axes)
+        bounds = [(0.01, 0.99)] * len(eff_axes)
         ixgrid = np.ix_(seeds_idx, eff_axes)
         seeds = grid[ixgrid]
 

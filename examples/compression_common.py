@@ -335,9 +335,9 @@ def get_common_cmd_args():
     parser.add_argument(
         "--prune_epochs",
         type=int,
-        default=3,
+        default=2,
         metavar="N",
-        help="training epochs for model pruning (default: 3)",
+        help="training epochs for model pruning (default: 2)",
     )
     # parser.add_argument(
     #     "--checkpoints_dir",
