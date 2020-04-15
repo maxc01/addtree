@@ -3,6 +3,8 @@ import json
 import os
 import logging
 
+import numpy as np
+
 from addtree.kernel_utils import build_addtree
 from addtree.kernel_utils import get_const_kernel
 from addtree.storage import Storage
@@ -119,10 +121,7 @@ def main():
             params = path2funcparam(path[1:])
             obj_info = setup_and_prune(cmd_args, params, logger, prune_type="multiple")
             ss.add(
-                path.path2vec(root.obs_dim),
-                obj_info["value"],
-                0.25,
-                path,
+                path.path2vec(root.obs_dim), obj_info["value"], 0.25, path,
             )
             logger.info(f"Finishing BO {i+1} iteration")
             logger.info(params)
@@ -133,21 +132,29 @@ def main():
             with open(fn_path, "w") as f:
                 json.dump(all_info, f)
 
+        def get_kappa(t, max_iter):
+            ks = np.linspace(1, 2, max_iter)
+            return ks[t]
+
         for i in range(n_init, 300):
             logger.info("=" * 50)
             logger.info(f"Starting BO {i+1} iteration (Optimization)")
             gp = ss.optimize(ker, n_restart=5, verbose=False)
             _, _, x_best, path = optimize_acq(
-                LCB, root, gp, ss.Y, root.obs_dim, grid_size=2000, nb_seed=8
+                LCB,
+                root,
+                gp,
+                ss.Y,
+                root.obs_dim,
+                grid_size=2000,
+                nb_seed=8,
+                kappa=get_kappa(i, 300),
             )
             path.set_data(x_best)
             params = path2funcparam(path[1:])
             obj_info = setup_and_prune(cmd_args, params, logger, prune_type="multiple")
             ss.add(
-                path.path2vec(root.obs_dim),
-                obj_info["value"],
-                0.25,
-                path=path,
+                path.path2vec(root.obs_dim), obj_info["value"], 0.25, path=path,
             )
             logger.info(f"Finishing BO {i+1} iteration")
             logger.info(params)
