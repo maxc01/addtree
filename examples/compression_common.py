@@ -314,9 +314,9 @@ def get_common_cmd_args():
     parser.add_argument(
         "--n_init",
         type=int,
-        default=20,
+        default=50,
         metavar="N",
-        help="number of random design (default: 20)",
+        help="number of random design (default: 50)",
     )
     parser.add_argument(
         "--batch-size",
