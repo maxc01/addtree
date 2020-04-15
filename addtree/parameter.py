@@ -52,18 +52,26 @@ class NodePath:
         return _axes
 
     def set_data(self, x: np.ndarray) -> "NodePath":
-        cur_idx = 0
+        i = 0
         for node in self.path:
-            node.parameter.data = x[cur_idx : (cur_idx + node.parameter.dim)]
-            cur_idx += node.parameter.dim
+            node.parameter.data = x[i : (i + node.parameter.dim)]
+            i += node.parameter.dim
 
         return self
 
-    def rand(self, n, obs_dim):
-        a = -np.random.rand(n, obs_dim)
-        for node in self.path:
-            a[:, node.bfs_index] = node.local_id
-            a[:, node.param_axes] *= -1
+    def rand(self, n, obs_dim, quasi=False):
+        if quasi:
+            import ghalton
+            a = -np.ones((n, obs_dim))
+            for node in self.path:
+                sequencer = ghalton.Halton(node.parameter.dim)
+                a[:, node.bfs_index] = node.local_id
+                a[:, node.param_axes] = sequencer.get(n)
+        else:
+            a = -np.random.rand(n, obs_dim)
+            for node in self.path:
+                a[:, node.bfs_index] = node.local_id
+                a[:, node.param_axes] *= -1
         return a
 
     def __getitem__(self, idx):
