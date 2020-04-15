@@ -38,7 +38,7 @@ class Storage:
         pred_sd = np.sqrt(pred_var)
         return pred, pred_sd
 
-    def optimize(self, kernel, n_restart=1, verbose=False):
+    def optimize(self, kernel, n_restart=1, verbose=False, quasi=False):
         gp = george.GP(kernel, mean=self.Y.mean())
         gp.compute(self.X, self.Yerr)
 
@@ -56,7 +56,12 @@ class Storage:
         bounds = kernel.get_parameter_bounds()
         x_best = None
         y_best = np.inf
-        seeds = np.random.uniform(*zip(*bounds), size=(n_restart, len(bounds)))
+        if quasi:
+            import ghalton
+            sequencer = ghalton.Halton(len(bounds))
+            seeds = sequencer.get(n_restart)
+        else:
+            seeds = np.random.uniform(*zip(*bounds), size=(n_restart, len(bounds)))
         for i in range(n_restart):
             result = minimize(
                 _neg_ln_like,
