@@ -20,5 +20,4 @@ while (<>) {
 }
 my $num = max @vs;
 my @argmax = grep $vs[$_]==$num, 0..$#vs;
-say "max is: $num (in $total_res resuls)";
-say "argmax: @iterations[@argmax]";
+say "max is: $num (in $total_res resuls), (argmax: @iterations[@argmax])";
