@@ -20,7 +20,7 @@ while (<>) {
   $one_row->{value} = -$data->{obj_info}->{value};
   $one_row->{top1} = $data->{obj_info}->{top1};
   $one_row->{sparsity} = $data->{obj_info}->{sparsity};
-  if (exists $data{iteration}) {
+  if (exists $data->{iteration}) {
     $one_row->{iteration} = $data->{iteration};
   } else {
     $one_row->{iteration} = $.;
