@@ -1,7 +1,6 @@
 import sys
 import json
 import os
-import argparse
 import logging
 
 from addtree.kernel_utils import build_addtree

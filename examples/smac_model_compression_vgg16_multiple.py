@@ -11,17 +11,11 @@ from compression_common import setup_logger
 from compression_common import setup_and_prune
 from compression_common import get_common_cmd_args
 from compression_common import get_experiment_id
+
 from smac_utils import cfg2funcparams_multiple
 from smac_utils import cs_multiple
-
-
-# Import ConfigSpace and different types of parameters
 from smac.configspace import Configuration
-
-# Import SMAC-utilities
 from smac.scenario.scenario import Scenario
-
-# from smac.facade.smac_facade import SMAC
 from smac.facade.smac_hpo_facade import SMAC4HPO
 
 
