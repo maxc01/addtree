@@ -12,11 +12,10 @@ while (<>) {
     $data = decode_json $_;
     push @vs, -$data->{obj_info}->{value};
     if (exists $data->{iteration}) {
-    push @iterations, $data->{iteration};
-  } else {
-    push @iterations, $.;
-  }
-
+      push @iterations, $data->{iteration};
+    } else {
+      push @iterations, $.;
+    }
 }
 my $num = max @vs;
 my @argmax = grep $vs[$_]==$num, 0..$#vs;
