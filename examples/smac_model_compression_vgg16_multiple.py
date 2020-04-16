@@ -32,6 +32,10 @@ def main():
         log_path = os.path.join(output_dir, "SMAC-model-compression-vgg16.log")
         setup_logger(logger, log_path)
 
+        logger.info(f"Experiment {expid} starts...")
+        logger.info("Experiment Configuration:")
+        logger.info(vars(cmd_args))
+
         def obj_func(cfg):
             logger.info("Starting BO iteration")
             params = cfg2funcparams_multiple(cfg)

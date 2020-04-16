@@ -30,6 +30,10 @@ def main():
         setup_logger(logger, log_path)
         n_init = cmd_args.n_init
 
+        logger.info(f"Experiment {expid} starts...")
+        logger.info("Experiment Configuration:")
+        logger.info(vars(cmd_args))
+
         def obj_func(cfg):
             logger.info("Starting BO iteration")
             params = cfg2funcparams_35(cfg)

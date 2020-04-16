@@ -107,6 +107,10 @@ def main():
         ker = build_addtree(root)
         n_init = cmd_args.n_init
 
+        logger.info(f"Experiment {expid} starts...")
+        logger.info("Experiment Configuration:")
+        logger.info(vars(cmd_args))
+
         for i in range(n_init):
             logger.info("=" * 50)
             logger.info(f"Starting BO {i+1} iteration (Random Design)")

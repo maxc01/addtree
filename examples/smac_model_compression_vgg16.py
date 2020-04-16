@@ -39,6 +39,11 @@ def main():
         os.makedirs(output_dir, exist_ok=True)
         log_path = os.path.join(output_dir, "SMAC-model-compression-vgg16.log")
         setup_logger(logger, log_path)
+        n_init = cmd_args.n_init
+
+        logger.info(f"Experiment {expid} starts...")
+        logger.info("Experiment Configuration:")
+        logger.info(vars(cmd_args))
 
         def obj_func(cfg):
             logger.info("Starting BO iteration")
@@ -72,10 +77,9 @@ def main():
 
         smac = SMAC4HPO(
             scenario=scenario,
-            rng=np.random.RandomState(42),
             tae_runner=obj_func,
             initial_design=RandomConfigurations,
-            initial_design_kwargs={"init_budget": 20,},
+            initial_design_kwargs={"init_budget": n_init,},
         )
 
         incumbent = smac.optimize()
