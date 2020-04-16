@@ -9,15 +9,15 @@ from compression_common import setup_and_prune
 from compression_common import get_common_cmd_args
 from compression_common import get_experiment_id
 
-from smac_utils import cfg2funcparams_35
-from smac_utils import cs_35
+from smac_utils import cfg2funcparams_40
+from smac_utils import cs_40
 from smac.scenario.scenario import Scenario
 from smac.facade.smac_hpo_facade import SMAC4HPO
 from smac.initial_design.random_configuration_design import RandomConfigurations
 
 
 def main():
-    EXP_BASEDIR = "smac-35"
+    EXP_BASEDIR = "smac-40"
     logger = logging.getLogger("SMAC-model-compression-vgg16-multiple")
     logger.setLevel(logging.DEBUG)
 
@@ -36,7 +36,7 @@ def main():
 
         def obj_func(cfg):
             logger.info("Starting BO iteration")
-            params = cfg2funcparams_35(cfg)
+            params = cfg2funcparams_40(cfg)
             obj_info = setup_and_prune(cmd_args, params, logger, prune_type="multiple")
             logger.info("Finishing BO iteration")
             logger.info(params)
@@ -54,7 +54,7 @@ def main():
             return obj_info["value"]
 
         # smac default do minimize
-        cs = cs_35()
+        cs = cs_40()
         scenario = Scenario(
             {
                 "run_obj": "quality",  # we optimize quality (alternatively runtime)
