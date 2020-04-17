@@ -15,10 +15,10 @@ from compression_common import setup_and_prune
 from compression_common import get_common_cmd_args
 from compression_common import get_experiment_id
 
-from space_utils.addtree_utils import build_tree_vgg16
-from space_utils.addtree_utils import path2funcparam_vgg16
-from space_utils.addtree_utils import build_tree_resnet50
-from space_utils.addtree_utils import path2funcparam_resnet50
+from addtree_utils import build_tree_vgg16
+from addtree_utils import path2funcparam_vgg16
+from addtree_utils import build_tree_resnet50
+from addtree_utils import path2funcparam_resnet50
 
 
 def main():

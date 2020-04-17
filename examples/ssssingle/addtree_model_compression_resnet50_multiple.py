@@ -59,7 +59,7 @@ def main():
                 json.dump(all_info, f)
 
         def get_kappa(t, max_iter):
-            ks = np.linspace(1, 2, max_iter)
+            ks = np.linspace(1, 3, max_iter)
             return ks[t]
 
         for i in range(n_init, 300):
