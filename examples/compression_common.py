@@ -13,6 +13,7 @@ import torch.nn.utils.prune as prune
 
 
 from models.vgg import VGG
+from models.resnet import ResNet50
 
 
 def testing_params():
@@ -41,6 +42,21 @@ def testing_params_multiple():
     params["b3"] = {}
     params["b3"]["prune_method"] = "l1"
     params["b3"]["amount"] = [0.1, 0.2, 0.3]
+
+    return params
+
+
+def testing_params_multiple_resnet50():
+    params = {}
+    params["layer2"] = {}
+    params["layer2"]["prune_method"] = "l1"
+    params["layer2"]["amount"] = [0.5, 0.5, 0.5, 0.5]
+    params["layer3"] = {}
+    params["layer3"]["prune_method"] = "ln"
+    params["layer3"]["amount"] = [0.1, 0.2, 0.3, 0.5]
+    params["layer4"] = {}
+    params["layer4"]["prune_method"] = "l1"
+    params["layer4"]["amount"] = [0.1, 0.2, 0.3, 0.5]
 
     return params
 
@@ -108,6 +124,74 @@ def do_prune_multiple(model, params):
             prune_module(module, method, amount[idx])
             n1 += torch.sum(module.weight == 0)
             n2 += module.weight.nelement()
+    sparsity = float(n1) / n2
+
+    info = {}
+    info["sparsity"] = sparsity
+    return info
+
+
+def do_prune_multiple_resnet50(model, params):
+    """ layers in each block have different prune parameters
+    params: ref. testing_params_multiple()
+    """
+
+    def prune_module(module, method, amount):
+        """prune a conv2d
+        """
+        if method == "ln":
+            prune.ln_structured(module, name="weight", amount=amount, n=2, dim=0)
+        elif method == "l1":
+            prune.l1_unstructured(module, name="weight", amount=amount)
+        else:
+            raise ValueError(f"{method} is wrong")
+
+    def prune_layer(layer, method, amounts):
+        """prune a layer, which has many Conv2d, using amounts dim of amounts must be
+        equal to 4, coresponding to conv1,conv2,conv3,and shortcut
+
+        All Conv2d in this layer share the same prune method.
+
+        """
+        n1 = 0
+        n2 = 0
+        for (name, module) in layer.named_modules():
+            if isinstance(module, torch.nn.Conv2d):
+                # four cases
+                if "conv1" in name:
+                    prune_module(module, method, amounts[0])
+                elif "conv2" in name:
+                    prune_module(module, method, amounts[1])
+                elif "conv3" in name:
+                    prune_module(module, method, amounts[2])
+                elif "shortcut" in name:
+                    prune_module(module, method, amounts[3])
+                else:
+                    raise ValueError(f"{name} is strange")
+
+                n1 += int(torch.sum(module.weight == 0))
+                n2 += int(module.weight.nelement())
+        return n1, n2
+
+    # we don't prune layer1, because layer1 has little weights, ref. the
+    # following information
+    # layer_info = {
+    #     "layer1": {"nelement": 212992, "ratio": 0.009084556254367574},
+    #     "layer2": {"nelement": 1212416, "ratio": 0.0517120894479385},
+    #     "layer3": {"nelement": 7077888, "ratio": 0.3018867924528302},
+    #     "layer4": {"nelement": 14942208, "ratio": 0.6373165618448637},
+    # }
+
+    n1 = 0
+    n2 = 0
+    layers = [model.layer2, model.layer3, model.layer4]
+    for layer_name, layer in zip(["layer2", "layer3", "layer4"], layers):
+        method = params[layer_name]["prune_method"]
+        amount = params[layer_name]["amount"]
+        _n1, _n2 = prune_layer(layer, method, amount)
+        n1 += _n1
+        n2 += _n2
+
     sparsity = float(n1) / n2
 
     info = {}
@@ -212,7 +296,9 @@ def setup_logger(main_logger, filename):
     main_logger.addHandler(fileHandler)
 
 
-def setup_and_prune(cmd_args, params, main_logger, prune_type="single"):
+def setup_and_prune(
+    cmd_args, params, main_logger, *, prune_type="single", model_name=None
+):
     """compress a model
 
     cmd_args: result from argparse
@@ -220,17 +306,23 @@ def setup_and_prune(cmd_args, params, main_logger, prune_type="single"):
 
     """
     assert prune_type in ["single", "multiple"]
+    assert model_name in ["vgg16", "resnet50"]
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     train_loader, test_loader = get_data_loaders(cmd_args)
-    model = VGG("VGG16").to(device=device)
+    if model_name == "vgg16":
+        model = VGG("VGG16").to(device=device)
+    elif model_name == "resnet50":
+        model = ResNet50().to(device=device)
+    else:
+        raise ValueError(f"Model {model_name} is wrong.")
 
     main_logger.info("Loading pretrained model {} ...".format(cmd_args.pretrained))
     try:
         model.load_state_dict(torch.load(cmd_args.pretrained))
     except FileNotFoundError:
-        print("Pretrained model doesn't exixt")
+        print("Pretrained model doesn't exist")
         try:
             sys.exit(0)
         except SystemExit:
@@ -241,17 +333,6 @@ def setup_and_prune(cmd_args, params, main_logger, prune_type="single"):
 
     main_logger.info("start model pruning...")
 
-    # op_names = ["conv1", "conv2", "fc1"]
-    # pruner_name = "_".join([params[op_name]["prune_method"] for op_name in op_names])
-    # model_path = os.path.join(
-    #     cmd_args.checkpoints_dir,
-    #     "pruned_{}_{}_{}.pth".format(model_name, dataset_name, pruner_name),
-    # )
-    # mask_path = os.path.join(
-    #     cmd_args.checkpoints_dir,
-    #     "mask_{}_{}_{}.pth".format(model_name, dataset_name, pruner_name),
-    # )
-
     if isinstance(model, nn.DataParallel):
         model = model.module
 
@@ -260,10 +341,16 @@ def setup_and_prune(cmd_args, params, main_logger, prune_type="single"):
     )
     best_top1 = 0
 
-    if prune_type == "single":
-        prune_stats = do_prune(model, params)
-    else:
-        prune_stats = do_prune_multiple(model, params)
+    if model_name == "vgg16":
+        if prune_type == "single":
+            prune_stats = do_prune(model, params)
+        else:
+            prune_stats = do_prune_multiple(model, params)
+    elif model_name == "resnet50":
+        if prune_type == "multiple":
+            prune_stats = do_prune_multiple_resnet50(model, params)
+        else:
+            raise ValueError(f"prune type {prune_type} is not implemented")
 
     if cmd_args.multi_gpu and torch.cuda.device_count() > 1:
         model = nn.DataParallel(model)
@@ -312,6 +399,12 @@ def get_common_cmd_args():
     """
     parser = argparse.ArgumentParser()
     parser.add_argument(
+        "model_name", type=str, help="model name, must be vgg16 or resnet50"
+    )
+    parser.add_argument(
+        "output_basedir", type=str, help="output base directory",
+    )
+    parser.add_argument(
         "--n_init",
         type=int,
         default=50,
@@ -339,12 +432,6 @@ def get_common_cmd_args():
         metavar="N",
         help="training epochs for model pruning (default: 2)",
     )
-    # parser.add_argument(
-    #     "--checkpoints_dir",
-    #     type=str,
-    #     default="./checkpoints",
-    #     help="checkpoints directory",
-    # )
     parser.add_argument(
         "--pretrained", type=str, default=None, help="pretrained model weights"
     )

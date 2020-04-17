@@ -8,7 +8,7 @@ from ConfigSpace.hyperparameters import (
 from ConfigSpace.conditions import InCondition
 
 
-def testing_cfg_multiple():
+def testing_cfg():
     return {
         "root": "l1",
         "r1_1": 0.7205429636854928,
@@ -25,7 +25,7 @@ def testing_cfg_multiple():
     }
 
 
-def cfg2funcparams_multiple(cfg):
+def cfg2funcparams(cfg):
     def extract_one_value(keys):
         """this function extract ONE value with key in keys from cfg
         keys: e.g. ["x1","x2"]
@@ -66,7 +66,7 @@ def cfg2funcparams_multiple(cfg):
     return params
 
 
-def cs_multiple():
+def get_cs():
     cs = ConfigurationSpace()
 
     root = CategoricalHyperparameter("root", choices=["l1", "ln"])

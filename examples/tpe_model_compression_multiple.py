@@ -10,21 +10,35 @@ from hyperopt import fmin, tpe, STATUS_OK, Trials
 from compression_common import get_common_cmd_args
 from compression_common import get_experiment_id
 
-from tpe_utils import cfg2funcparams_multiple
-from tpe_utils import get_space_multiple
+from tpe_utils import cfg2funcparams_vgg16
+from tpe_utils import get_space_vgg16
+from tpe_utils import cfg2funcparams_resnet50
+from tpe_utils import get_space_resnet50
 
 
 def main():
-    EXP_BASEDIR = "tpe-multiple"
-    logger = logging.getLogger("tpe-model-compression-vgg16-multiple")
-    logger.setLevel(logging.DEBUG)
 
     try:
         cmd_args, _ = get_common_cmd_args()
+
+        output_basedir = cmd_args.output_basedir
+        model_name = cmd_args.model_name
+        if model_name == "vgg16":
+            cfg2funcparams = cfg2funcparams_vgg16
+            get_space = get_space_vgg16
+        elif model_name == "resnet50":
+            cfg2funcparams = cfg2funcparams_resnet50
+            get_space = get_space_resnet50
+        else:
+            raise ValueError(f"model name {model_name} is wrong")
+
+        logger = logging.getLogger(f"TPE-{model_name}")
+        logger.setLevel(logging.DEBUG)
+
         expid = get_experiment_id(6)
-        output_dir = os.path.join(EXP_BASEDIR, expid)
+        output_dir = os.path.join(output_basedir, expid)
         os.makedirs(output_dir, exist_ok=True)
-        log_path = os.path.join(output_dir, "tpe-model-compression-vgg16.log")
+        log_path = os.path.join(output_dir, "tpe-model-compression-{model_name}.log")
         setup_logger(logger, log_path)
 
         logger.info(f"Experiment {expid} starts...")
@@ -33,8 +47,10 @@ def main():
 
         def obj_func(cfg):
             logger.info("Starting BO iteration")
-            params = cfg2funcparams_multiple(cfg)
-            obj_info = setup_and_prune(cmd_args, params, logger, prune_type="multiple")
+            params = cfg2funcparams(cfg)
+            obj_info = setup_and_prune(
+                cmd_args, params, logger, prune_type="multiple", model_name=model_name
+            )
             logger.info("Finishing BO iteration")
             logger.info(params)
             logger.info(obj_info)
@@ -50,7 +66,7 @@ def main():
 
             return {"loss": obj_info["value"], "status": STATUS_OK}
 
-        space = get_space_multiple()
+        space = get_space()
         trials = Trials()
         best = fmin(
             obj_func,
