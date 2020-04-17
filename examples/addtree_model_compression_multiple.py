@@ -15,19 +15,42 @@ from compression_common import setup_and_prune
 from compression_common import get_common_cmd_args
 from compression_common import get_experiment_id
 
+from space_utils.addtree_utils import build_tree_vgg16
+from space_utils.addtree_utils import path2funcparam_vgg16
+from space_utils.addtree_utils import build_tree_resnet50
+from space_utils.addtree_utils import path2funcparam_resnet50
+
 
 def main():
-    EXP_BASEDIR = "addtree-multiple-new"
-    logger = logging.getLogger("addtree-model-compression-vgg16-multiple")
-    logger.setLevel(logging.DEBUG)
 
     try:
         cmd_args, _ = get_common_cmd_args()
+
+        output_basedir = cmd_args.output_basedir
+        model_name = cmd_args.model_name
+        if model_name == "vgg16":
+            path2funcparam = path2funcparam_vgg16
+            build_tree = build_tree_vgg16
+        elif model_name == "resnet50":
+            path2funcparam = path2funcparam_resnet50
+            build_tree = build_tree_resnet50
+        else:
+            raise ValueError(f"model name {model_name} is wrong")
+
+        logger = logging.getLogger(f"addtree-{model_name}")
+        logger.setLevel(logging.DEBUG)
+
         expid = get_experiment_id(6)
-        output_dir = os.path.join(EXP_BASEDIR, expid)
+        output_dir = os.path.join(output_basedir, expid)
         os.makedirs(output_dir, exist_ok=False)
-        log_path = os.path.join(output_dir, "addtree-model-compression-vgg16.log")
+        log_path = os.path.join(
+            output_dir, f"addtree-model-compression-{model_name}.log"
+        )
         setup_logger(logger, log_path)
+
+        logger.info(f"Experiment {expid} starts...")
+        logger.info("Experiment Configuration:")
+        logger.info(vars(cmd_args))
 
         root = build_tree()
         ss = Storage()
@@ -36,16 +59,14 @@ def main():
         ker = const_ker * ker
         n_init = cmd_args.n_init
 
-        logger.info(f"Experiment {expid} starts...")
-        logger.info("Experiment Configuration:")
-        logger.info(vars(cmd_args))
-
         for i in range(n_init):
             logger.info("=" * 50)
             logger.info(f"Starting BO {i+1} iteration (Random Design)")
             path = root.random_path(rand_data=True)
             params = path2funcparam(path[1:])
-            obj_info = setup_and_prune(cmd_args, params, logger, prune_type="multiple")
+            obj_info = setup_and_prune(
+                cmd_args, params, logger, prune_type="multiple", model_name=model_name
+            )
             ss.add(
                 path.path2vec(root.obs_dim), obj_info["value"], 0.25, path,
             )
@@ -59,7 +80,7 @@ def main():
                 json.dump(all_info, f)
 
         def get_kappa(t, max_iter):
-            ks = np.linspace(1, 2, max_iter)
+            ks = np.linspace(1, 3, max_iter)
             return ks[t]
 
         for i in range(n_init, 300):
@@ -78,7 +99,9 @@ def main():
             )
             path.set_data(x_best)
             params = path2funcparam(path[1:])
-            obj_info = setup_and_prune(cmd_args, params, logger, prune_type="multiple")
+            obj_info = setup_and_prune(
+                cmd_args, params, logger, prune_type="multiple", model_name=model_name
+            )
             ss.add(
                 path.path2vec(root.obs_dim), obj_info["value"], 0.25, path=path,
             )

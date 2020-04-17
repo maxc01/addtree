@@ -10,10 +10,10 @@ from hyperopt import fmin, tpe, STATUS_OK, Trials
 from compression_common import get_common_cmd_args
 from compression_common import get_experiment_id
 
-from tpe_utils import cfg2funcparams_vgg16
-from tpe_utils import get_space_vgg16
-from tpe_utils import cfg2funcparams_resnet50
-from tpe_utils import get_space_resnet50
+from space_utils.tpe_utils import cfg2funcparams_vgg16
+from space_utils.tpe_utils import get_space_vgg16
+from space_utils.tpe_utils import cfg2funcparams_resnet50
+from space_utils.tpe_utils import get_space_resnet50
 
 
 def main():

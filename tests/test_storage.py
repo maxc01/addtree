@@ -1,7 +1,5 @@
 import pytest
 import numpy as np
-from scipy.optimize import minimize
-import heapq
 from tqdm import tqdm
 
 from addtree.kernel_utils import build_addtree

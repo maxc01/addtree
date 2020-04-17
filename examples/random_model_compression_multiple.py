@@ -8,10 +8,10 @@ from compression_common import setup_and_prune
 from compression_common import get_common_cmd_args
 from compression_common import get_experiment_id
 
-from smac_utils import cfg2funcparams_vgg16
-from smac_utils import get_cs_vgg16
-from smac_utils import cfg2funcparams_resnet50
-from smac_utils import get_cs_resnet50
+from space_utils.smac_utils import cfg2funcparams_vgg16
+from space_utils.smac_utils import get_cs_vgg16
+from space_utils.smac_utils import cfg2funcparams_resnet50
+from space_utils.smac_utils import get_cs_resnet50
 
 
 def main():
@@ -49,11 +49,7 @@ def main():
             logger.info("Starting BO iteration")
             params = cfg2funcparams(cfg)
             obj_info = setup_and_prune(
-                cmd_args,
-                params,
-                logger,
-                prune_type="multiple",
-                model_name=model_name
+                cmd_args, params, logger, prune_type="multiple", model_name=model_name
             )
             logger.info("Finishing BO iteration")
             logger.info(params)
