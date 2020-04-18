@@ -12,6 +12,8 @@ from smac_utils import cfg2funcparams_vgg16
 from smac_utils import get_cs_vgg16
 from smac_utils import cfg2funcparams_resnet50
 from smac_utils import get_cs_resnet50
+from smac_utils import cfg2funcparams_resnet56
+from smac_utils import get_cs_resnet56
 
 
 def main():
@@ -27,6 +29,9 @@ def main():
         elif model_name == "resnet50":
             cfg2funcparams = cfg2funcparams_resnet50
             get_cs = get_cs_resnet50
+        elif model_name == "resnet56":
+            cfg2funcparams = cfg2funcparams_resnet56
+            get_cs = get_cs_resnet56
         else:
             raise ValueError(f"model name {model_name} is wrong")
 

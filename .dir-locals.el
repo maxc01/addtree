@@ -6,6 +6,7 @@
         (cdr
          (project-current))))
  (python-mode
+  (eglot-workspace-configuration . ((:pyls . (:configurationSources ["flake8"]))))
   (rsync-remote-base-dir . "VAUXITE2:/esat/vauxite/xma/sing_images/")
   (eval add-to-list 'python-shell-extra-pythonpaths
         (cdr

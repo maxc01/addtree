@@ -14,6 +14,7 @@ import torch.nn.utils.prune as prune
 
 from models.vgg import VGG
 from models.resnet import ResNet50
+from models.resnet_cifar10 import resnet56
 
 
 def testing_params():
@@ -57,6 +58,21 @@ def testing_params_multiple_resnet50():
     params["layer4"] = {}
     params["layer4"]["prune_method"] = "l1"
     params["layer4"]["amount"] = [0.1, 0.2, 0.3, 0.5]
+
+    return params
+
+
+def testing_parms_resnet56():
+    params = {}
+    params["layer1"] = {}
+    params["layer1"]["prune_method"] = "l1"
+    params["layer1"]["amount"] = [0.5, 0.5, 0.5]
+    params["layer2"] = {}
+    params["layer2"]["prune_method"] = "ln"
+    params["layer2"]["amount"] = [0.1, 0.2, 0.3]
+    params["layer3"] = {}
+    params["layer3"]["prune_method"] = "l1"
+    params["layer3"]["amount"] = [0.1, 0.2, 0.3]
 
     return params
 
@@ -198,6 +214,61 @@ def do_prune_multiple_resnet50(model, params):
     info["sparsity"] = sparsity
     return info
 
+def do_prune_resnet56(model, params):
+
+    def prune_module(module, method, amount):
+        """prune a conv2d
+        """
+        if method == "ln":
+            prune.ln_structured(module, name="weight", amount=amount, n=2, dim=0)
+        elif method == "l1":
+            prune.l1_unstructured(module, name="weight", amount=amount)
+        else:
+            raise ValueError(f"{method} is wrong")
+
+    def prune_layer(layer, method, amounts):
+        """prune a layer, which has many Conv2d, using amounts dim of amounts must be
+        equal to 3, coresponding to (0.*, 1.*, 2.*), (3.*,4.*,5.*), and (6.*,7.*,8.*)
+
+        All Conv2d in this layer share the same prune method.
+        Strategy, every layer has 9 Conv2d, we prune 0,1,2 using ?_r1, ?_r2, ?_r3
+        i.e. every layer (block) has 3 parameters.
+
+        """
+        n1 = 0
+        n2 = 0
+        for (name, module) in layer.named_modules():
+            if isinstance(module, torch.nn.Conv2d):
+                # four cases
+                if "0.conv" in name or "1.conv" in name or "2.conv" in name:
+                    prune_module(module, method, amounts[0])
+                elif "3.conv" in name or "4.conv" in name or "5.conv" in name:
+                    prune_module(module, method, amounts[1])
+                elif "6.conv" in name or "7.conv" in name or "8.conv" in name:
+                    prune_module(module, method, amounts[2])
+                else:
+                    raise ValueError(f"{name} is strange")
+
+                n1 += int(torch.sum(module.weight == 0))
+                n2 += int(module.weight.nelement())
+        return n1, n2
+
+    n1 = 0
+    n2 = 0
+    layers = [model.layer1, model.layer2, model.layer3]
+    for layer_name, layer in zip(["layer1", "layer2", "layer3"], layers):
+        method = params[layer_name]["prune_method"]
+        amount = params[layer_name]["amount"]
+        _n1, _n2 = prune_layer(layer, method, amount)
+        n1 += _n1
+        n2 += _n2
+
+    sparsity = float(n1) / n2
+
+    info = {}
+    info["sparsity"] = sparsity
+    return info
+
 
 def train(args, model, device, train_loader, optimizer, epoch, main_logger):
     model.train()
@@ -306,7 +377,7 @@ def setup_and_prune(
 
     """
     assert prune_type in ["single", "multiple"]
-    assert model_name in ["vgg16", "resnet50"]
+    assert model_name in ["vgg16", "resnet50", "resnet56"]
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -315,6 +386,8 @@ def setup_and_prune(
         model = VGG("VGG16").to(device=device)
     elif model_name == "resnet50":
         model = ResNet50().to(device=device)
+    elif model_name == "resnet56":
+        model = resnet56().to(device=device)
     else:
         raise ValueError(f"Model {model_name} is wrong.")
 
@@ -349,6 +422,11 @@ def setup_and_prune(
     elif model_name == "resnet50":
         if prune_type == "multiple":
             prune_stats = do_prune_multiple_resnet50(model, params)
+        else:
+            raise ValueError(f"prune type {prune_type} is not implemented")
+    elif model_name == "resnet56":
+        if prune_type == "multiple":
+            prune_stats = do_prune_resnet56(model, params)
         else:
             raise ValueError(f"prune type {prune_type} is not implemented")
 

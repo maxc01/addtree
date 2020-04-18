@@ -19,6 +19,8 @@ from addtree_utils import build_tree_vgg16
 from addtree_utils import path2funcparam_vgg16
 from addtree_utils import build_tree_resnet50
 from addtree_utils import path2funcparam_resnet50
+from addtree_utils import build_tree_resnet56
+from addtree_utils import path2funcparam_resnet56
 
 
 def main():
@@ -34,6 +36,9 @@ def main():
         elif model_name == "resnet50":
             path2funcparam = path2funcparam_resnet50
             build_tree = build_tree_resnet50
+        elif model_name == "resnet56":
+            path2funcparam = path2funcparam_resnet56
+            build_tree = build_tree_resnet56
         else:
             raise ValueError(f"model name {model_name} is wrong")
 
