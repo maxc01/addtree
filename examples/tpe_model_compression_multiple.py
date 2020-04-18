@@ -36,9 +36,9 @@ def main():
         logger.setLevel(logging.DEBUG)
 
         expid = get_experiment_id(6)
-        output_dir = os.path.join(output_basedir, expid)
+        output_dir = os.path.join(output_basedir, "tpe", model_name, expid)
         os.makedirs(output_dir, exist_ok=True)
-        log_path = os.path.join(output_dir, "tpe-model-compression-{model_name}.log")
+        log_path = os.path.join(output_dir, f"tpe-model-compression-{model_name}.log")
         setup_logger(logger, log_path)
 
         logger.info(f"Experiment {expid} starts...")

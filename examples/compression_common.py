@@ -337,7 +337,7 @@ def setup_and_prune(
         model = model.module
 
     optimizer_finetune = torch.optim.SGD(
-        model.parameters(), lr=0.001, momentum=0.9, weight_decay=1e-4
+        model.parameters(), lr=cmd_args.finetune_lr, momentum=0.9, weight_decay=1e-4
     )
     best_top1 = 0
 
@@ -366,6 +366,7 @@ def setup_and_prune(
             epoch,
             main_logger,
         )
+        main_logger.info("Testing finetuned model after pruning...")
         top1 = test(cmd_args, model, device, test_loader, main_logger)
         if top1 > best_top1:
             best_top1 = top1
@@ -412,14 +413,14 @@ def get_common_cmd_args():
         help="number of random design (default: 50)",
     )
     parser.add_argument(
-        "--batch-size",
+        "--batch_size",
         type=int,
         default=128,
         metavar="N",
         help="input batch size for training (default: 128)",
     )
     parser.add_argument(
-        "--test-batch-size",
+        "--test_batch_size",
         type=int,
         default=1000,
         metavar="N",
@@ -431,6 +432,13 @@ def get_common_cmd_args():
         default=2,
         metavar="N",
         help="training epochs for model pruning (default: 2)",
+    )
+    parser.add_argument(
+        "--finetune_lr",
+        type=float,
+        default=0.001,
+        metavar="F",
+        help="learning rate in finetuning (defualt: 0.001)",
     )
     parser.add_argument(
         "--pretrained", type=str, default=None, help="pretrained model weights"

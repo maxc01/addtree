@@ -34,7 +34,7 @@ def main():
         logger.setLevel(logging.DEBUG)
 
         expid = get_experiment_id(6)
-        output_dir = os.path.join(output_basedir, expid)
+        output_dir = os.path.join(output_basedir, "random", model_name, expid)
         os.makedirs(output_dir, exist_ok=True)
         log_path = os.path.join(
             output_dir, f"random-model-compression-{model_name}.log"
