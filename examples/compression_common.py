@@ -433,6 +433,8 @@ def setup_and_prune(
     if cmd_args.multi_gpu and torch.cuda.device_count() > 1:
         model = nn.DataParallel(model)
 
+    main_logger.info("Testing pruned model before finetune...")
+    test(cmd_args, model, device, test_loader, main_logger)
     for epoch in range(cmd_args.prune_epochs):
         main_logger.info("# Finetune Epoch {} #".format(epoch + 1))
         train(
