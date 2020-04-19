@@ -18,5 +18,7 @@ while (<>) {
     }
 }
 my $num = max @vs;
+my $num_s = sprintf("%.3f",$num);
+my $total_res_s = sprintf("%-3d", $total_res);
 my @argmax = grep $vs[$_]==$num, 0..$#vs;
-say "max is: $num (in $total_res resuls), (argmax: @iterations[@argmax])";
+say " max is: $num_s (in $total_res_s resuls), (argmax: @iterations[@argmax])";
