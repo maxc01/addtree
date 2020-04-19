@@ -33,12 +33,15 @@ def main():
         if model_name == "vgg16":
             path2funcparam = path2funcparam_vgg16
             build_tree = build_tree_vgg16
+            obs_sigma = 0.25  # TODO: this needs to be determined
         elif model_name == "resnet50":
             path2funcparam = path2funcparam_resnet50
             build_tree = build_tree_resnet50
+            obs_sigma = 0.15
         elif model_name == "resnet56":
             path2funcparam = path2funcparam_resnet56
             build_tree = build_tree_resnet56
+            obs_sigma = 0.03
         else:
             raise ValueError(f"model name {model_name} is wrong")
 
@@ -56,6 +59,7 @@ def main():
         logger.info(f"Experiment {expid} starts...")
         logger.info("Experiment Configuration:")
         logger.info(vars(cmd_args))
+        logger.info("Observation sigma is: %f", obs_sigma)
 
         root = build_tree()
         ss = Storage()
@@ -108,7 +112,7 @@ def main():
                 cmd_args, params, logger, prune_type="multiple", model_name=model_name
             )
             ss.add(
-                path.path2vec(root.obs_dim), obj_info["value"], 0.25, path=path,
+                path.path2vec(root.obs_dim), obj_info["value"], obs_sigma, path=path,
             )
             logger.info(f"Finishing BO {i+1} iteration")
             logger.info(params)
