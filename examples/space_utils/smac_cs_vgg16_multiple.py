@@ -245,3 +245,7 @@ def get_cs():
     cs.add_condition(InCondition(r14_3, x6, ["ln"]))
 
     return cs
+
+print("vgg16")
+cs = get_cs()
+print(len(cs.get_hyperparameters()))

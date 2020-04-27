@@ -1,35 +1,52 @@
 import sys
-from datetime import datetime
 import json
 import os
-import argparse
 import logging
-
-import numpy as np
 
 from compression_common import setup_logger
 from compression_common import setup_and_prune
 from compression_common import get_common_cmd_args
 from compression_common import get_experiment_id
 
-from smac_utils import cfg2funcparams_multiple
-from smac_utils import cs_multiple
-from smac.configspace import Configuration
 from smac.scenario.scenario import Scenario
-from smac.facade.smac_hpo_facade import SMAC4HPO
+
+# from smac.facade.smac_hpo_facade import SMAC4HPO
+from smac_utils import SMAC4HPO
+
+from smac_utils import cfg2funcparams_vgg16_40d
+from smac_utils import get_cs_vgg16_40d
+from smac_utils import cfg2funcparams_resnet50_40d
+from smac_utils import get_cs_resnet50_40d
+from smac_utils import cfg2funcparams_resnet56
+from smac_utils import get_cs_resnet56
 
 
 def main():
-    EXP_BASEDIR = "smac-multiple"
-    logger = logging.getLogger("SMAC-model-compression-vgg16-multiple")
-    logger.setLevel(logging.DEBUG)
 
     try:
         cmd_args, _ = get_common_cmd_args()
+
+        output_basedir = cmd_args.output_basedir
+        model_name = cmd_args.model_name
+        if model_name == "vgg16":
+            cfg2funcparams = cfg2funcparams_vgg16_40d
+            get_cs = get_cs_vgg16_40d
+        elif model_name == "resnet50":
+            cfg2funcparams = cfg2funcparams_resnet50_40d
+            get_cs = get_cs_resnet50_40d
+        elif model_name == "resnet56":
+            cfg2funcparams = cfg2funcparams_resnet56
+            get_cs = get_cs_resnet56
+        else:
+            raise ValueError(f"model name {model_name} is wrong")
+
+        logger = logging.getLogger(f"smac-{model_name}")
+        logger.setLevel(logging.DEBUG)
+
         expid = get_experiment_id(6)
-        output_dir = os.path.join(EXP_BASEDIR, expid)
+        output_dir = os.path.join(output_basedir, "smac", model_name, expid)
         os.makedirs(output_dir, exist_ok=True)
-        log_path = os.path.join(output_dir, "SMAC-model-compression-vgg16.log")
+        log_path = os.path.join(output_dir, f"smac-model-compression-{model_name}.log")
         setup_logger(logger, log_path)
 
         logger.info(f"Experiment {expid} starts...")
@@ -38,8 +55,8 @@ def main():
 
         def obj_func(cfg):
             logger.info("Starting BO iteration")
-            params = cfg2funcparams_multiple(cfg)
-            obj_info = setup_and_prune(cmd_args, params, logger, prune_type="multiple")
+            params = cfg2funcparams(cfg)
+            obj_info = setup_and_prune(cmd_args, params, logger, prune_type="multiple", model_name=model_name)
             logger.info("Finishing BO iteration")
             logger.info(params)
             logger.info(obj_info)
@@ -56,7 +73,7 @@ def main():
             return obj_info["value"]
 
         # smac default do minimize
-        cs = cs_multiple()
+        cs = get_cs()
         scenario = Scenario(
             {
                 "run_obj": "quality",  # we optimize quality (alternatively runtime)
@@ -67,23 +84,8 @@ def main():
             }
         )
 
-        # smac = SMAC4HPO(
-        #     scenario=scenario,
-        #     rng=np.random.RandomState(42),
-        #     tae_runner=obj_func,
-        #     initial_design=LHDesign,
-        #     initial_design_kwargs={"n_configs_x_params": 2},
-        # )
-        configs = [
-            Configuration(configuration_space=cs, values=cs.sample_configuration())
-            for i in range(20)
-        ]
-        import pdb
-
-        pdb.set_trace()
         smac = SMAC4HPO(
             scenario=scenario,
-            # initial_design_kwargs={"n_configs_x_params": 10},
             tae_runner=obj_func,
         )
 

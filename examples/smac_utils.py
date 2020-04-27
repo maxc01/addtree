@@ -16,3 +16,14 @@ from space_utils.smac_cs_vgg16_multiple import get_cs as get_cs_vgg16 # noqa
 # resnet56
 from space_utils.smac_cs_resnet56 import cfg2funcparams as cfg2funcparams_resnet56
 from space_utils.smac_cs_resnet56 import get_cs as get_cs_resnet56
+
+# vgg16 40d
+from space_utils.smac_cs_vgg16_40d import cfg2funcparams as cfg2funcparams_vgg16_40d  # NOQA
+from space_utils.smac_cs_vgg16_40d import get_cs as get_cs_vgg16_40d # noqa
+
+# resnet50 40d
+from space_utils.smac_cs_resnet50_40d import cfg2funcparams as cfg2funcparams_resnet50_40d  # noqa
+from space_utils.smac_cs_resnet50_40d import get_cs as get_cs_resnet50_40d  # NOQA
+
+# smac utils
+from space_utils.smac_hpo_facade import SMAC4HPO
