@@ -248,6 +248,7 @@ def get_cs():
     return cs
 
 
-print("vgg16")
-cs = get_cs()
-print(len(cs.get_hyperparameters()))
+if __name__ == '__main__':
+    print("vgg16")
+    cs = get_cs()
+    print(len(cs.get_hyperparameters()))
