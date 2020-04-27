@@ -47,6 +47,22 @@ def testing_params_multiple():
     return params
 
 
+def resnet50_vertor2params(m1,m2,m3,vec):
+    params = {}
+    params["layer2"] = {}
+    params["layer2"]["prune_method"] = m1
+    params["layer2"]["amount"] = vec[0:4]
+    params["layer3"] = {}
+    params["layer3"]["prune_method"] = m2
+    params["layer3"]["amount"] = vec[4:8]
+    params["layer4"] = {}
+    params["layer4"]["prune_method"] = m3
+    params["layer4"]["amount"] = vec[8:]
+
+    return params
+    
+    
+
 def testing_params_multiple_resnet50():
     params = {}
     params["layer2"] = {}
@@ -198,6 +214,7 @@ def do_prune_multiple_resnet50(model, params):
     #     "layer4": {"nelement": 14942208, "ratio": 0.6373165618448637},
     # }
 
+    layer_comp_info = {}
     n1 = 0
     n2 = 0
     layers = [model.layer2, model.layer3, model.layer4]
@@ -205,6 +222,7 @@ def do_prune_multiple_resnet50(model, params):
         method = params[layer_name]["prune_method"]
         amount = params[layer_name]["amount"]
         _n1, _n2 = prune_layer(layer, method, amount)
+        layer_comp_info[layer_name] = _n1 / _n2
         n1 += _n1
         n2 += _n2
 
@@ -212,6 +230,7 @@ def do_prune_multiple_resnet50(model, params):
 
     info = {}
     info["sparsity"] = sparsity
+    info.update(layer_comp_info)
     return info
 
 def do_prune_resnet56(model, params):
