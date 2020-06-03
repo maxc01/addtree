@@ -89,7 +89,7 @@ def get_cs():
 
     r3_1 = UniformFloatHyperparameter("r3_1", lower=0.01, upper=0.99, log=False)
     r3_2 = UniformFloatHyperparameter("r3_2", lower=0.01, upper=0.99, log=False)
-    r3_3 = UniformFloatHyperparameter("r3_3", lower=0.01, upper=0.99, log=False)
+    r3_3 = Constant("r3_3", 0.5)
 
     r4_1 = UniformFloatHyperparameter("r4_1", lower=0.01, upper=0.99, log=False)
     r4_2 = UniformFloatHyperparameter("r4_2", lower=0.01, upper=0.99, log=False)
@@ -103,37 +103,37 @@ def get_cs():
     r6_2 = UniformFloatHyperparameter("r6_2", lower=0.01, upper=0.99, log=False)
     r6_3 = UniformFloatHyperparameter("r6_3", lower=0.01, upper=0.99, log=False)
 
-    r7_1 = Constant("r7_1", 0.5)
-    r7_2 = Constant("r7_2", 0.5)
+    r7_1 = UniformFloatHyperparameter("r7_1", lower=0.01, upper=0.99, log=False)
+    r7_2 = UniformFloatHyperparameter("r7_2", lower=0.01, upper=0.99, log=False)
     r7_3 = Constant("r7_3", 0.5)
 
     r8_1 = UniformFloatHyperparameter("r8_1", lower=0.01, upper=0.99, log=False)
     r8_2 = UniformFloatHyperparameter("r8_2", lower=0.01, upper=0.99, log=False)
-    r8_3 = UniformFloatHyperparameter("r8_3", lower=0.01, upper=0.99, log=False)
+    r8_3 = Constant("r8_3", 0.5)
 
-    r9_1 = Constant("r9_1", 0.5)
-    r9_2 = Constant("r9_2", 0.5)
+    r9_1 = UniformFloatHyperparameter("r9_1", lower=0.01, upper=0.99, log=False)
+    r9_2 = UniformFloatHyperparameter("r9_2", lower=0.01, upper=0.99, log=False)
     r9_3 = Constant("r9_3", 0.5)
 
     r10_1 = UniformFloatHyperparameter("r10_1", lower=0.01, upper=0.99, log=False)
     r10_2 = UniformFloatHyperparameter("r10_2", lower=0.01, upper=0.99, log=False)
-    r10_3 = UniformFloatHyperparameter("r10_3", lower=0.01, upper=0.99, log=False)
+    r10_3 = Constant("r10_3", 0.5)
 
-    r11_1 = Constant("r11_1", 0.5)
-    r11_2 = Constant("r11_2", 0.5)
+    r11_1 = UniformFloatHyperparameter("r11_1", lower=0.01, upper=0.99, log=False)
+    r11_2 = UniformFloatHyperparameter("r11_2", lower=0.01, upper=0.99, log=False)
     r11_3 = Constant("r11_3", 0.5)
 
     r12_1 = UniformFloatHyperparameter("r12_1", lower=0.01, upper=0.99, log=False)
     r12_2 = UniformFloatHyperparameter("r12_2", lower=0.01, upper=0.99, log=False)
-    r12_3 = UniformFloatHyperparameter("r12_3", lower=0.01, upper=0.99, log=False)
+    r12_3 = Constant("r12_3", 0.5)
 
     r13_1 = UniformFloatHyperparameter("r13_1", lower=0.01, upper=0.99, log=False)
     r13_2 = UniformFloatHyperparameter("r13_2", lower=0.01, upper=0.99, log=False)
-    r13_3 = UniformFloatHyperparameter("r13_3", lower=0.01, upper=0.99, log=False)
+    r13_3 = Constant("r13_3", 0.5)
 
     r14_1 = UniformFloatHyperparameter("r14_1", lower=0.01, upper=0.99, log=False)
     r14_2 = UniformFloatHyperparameter("r14_2", lower=0.01, upper=0.99, log=False)
-    r14_3 = UniformFloatHyperparameter("r14_3", lower=0.01, upper=0.99, log=False)
+    r14_3 = Constant("r14_3", 0.5)
 
     cs.add_hyperparameters(
         [

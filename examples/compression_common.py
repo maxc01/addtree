@@ -47,7 +47,7 @@ def testing_params_multiple():
     return params
 
 
-def resnet50_vertor2params(m1,m2,m3,vec):
+def resnet50_vertor2params(m1, m2, m3, vec):
     params = {}
     params["layer2"] = {}
     params["layer2"]["prune_method"] = m1
@@ -60,8 +60,21 @@ def resnet50_vertor2params(m1,m2,m3,vec):
     params["layer4"]["amount"] = vec[8:]
 
     return params
-    
-    
+
+def vgg16_vector2params(m1,m2,m3,vec):
+    params = {}
+    params["b1"] = {}
+    params["b1"]["prune_method"] = m1
+    params["b1"]["amount"] = vec[0:3]
+    params["b2"] = {}
+    params["b2"]["prune_method"] = m2
+    params["b2"]["amount"] = vec[3:6]
+    params["b3"] = {}
+    params["b3"]["prune_method"] = m3
+    params["b3"]["amount"] = vec[6:]
+
+    return params
+
 
 def testing_params_multiple_resnet50():
     params = {}
@@ -141,14 +154,28 @@ def do_prune_multiple(model, params):
         else:
             raise ValueError(f"{method} is wrong")
 
+    # layer_info = {
+    #     0: 1728, 3 : 36864, 7 :73728, 10: 147456,
+    #     14: 294912, 17: 589824, 20: 589824,
+    #     24: 1179648, 27: 2359296, 30: 2359296,
+    #     34: 2359296, 37: 2359296, 40: 2359296,
+    # }
+    # block_info = {
+    #     "b0": {"nelement": 259776 , "ratio": 0.017659266220290536},
+    #     "b1": {"nelement": 1474560, "ratio": 0.10023885038568464},
+    #     "b2": {"nelement": 5898240, "ratio": 0.40095540154273857},
+    #     "b3": {"nelement": 7077888, "ratio": 0.4811464818512863},}
+
     fea_idx = {
         "b1": [14, 17, 20],
         "b2": [24, 27, 30],
         "b3": [34, 37, 40],
     }
+    layer_comp_info = {}
     n1 = 0
     n2 = 0
     for b_name in ["b1", "b2", "b3"]:
+        _n1, _n2 = 0, 0
         method = params[b_name]["prune_method"]
         amount = params[b_name]["amount"]
         for idx, fid in enumerate(fea_idx[b_name]):
@@ -156,10 +183,15 @@ def do_prune_multiple(model, params):
             prune_module(module, method, amount[idx])
             n1 += torch.sum(module.weight == 0)
             n2 += module.weight.nelement()
+            _n1 += torch.sum(module.weight == 0)
+            _n2 += module.weight.nelement()
+        layer_comp_info[b_name] = float(_n1) / _n2
+
     sparsity = float(n1) / n2
 
     info = {}
     info["sparsity"] = sparsity
+    info.update(layer_comp_info)
     return info
 
 
@@ -233,8 +265,8 @@ def do_prune_multiple_resnet50(model, params):
     info.update(layer_comp_info)
     return info
 
-def do_prune_resnet56(model, params):
 
+def do_prune_resnet56(model, params):
     def prune_module(module, method, amount):
         """prune a conv2d
         """
