@@ -8,3 +8,7 @@ from space_utils.addtree_cs_resnet50 import path2funcparam as path2funcparam_res
 # resnet56
 from space_utils.addtree_cs_resnet56 import build_tree as build_tree_resnet56
 from space_utils.addtree_cs_resnet56 import path2funcparam as path2funcparam_resnet56
+
+# jenatton small
+from space_utils.addtree_cs_jenatton_small import build_tree as build_tree_jenatton_small
+from space_utils.addtree_cs_jenatton_small import path2funcparam as path2funcparam_jenatton_small
