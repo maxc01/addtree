@@ -114,3 +114,8 @@ dmypy.json
 /examples/script/
 /examples/space_utils/haha.py
 haha
+/addtree/common.py
+/addtree/haha.py
+/examples/ssssingle/
+/poetry.lock
+/tests/a_huge_profile
