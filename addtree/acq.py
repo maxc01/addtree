@@ -28,6 +28,8 @@ def optimize_acq(
     kappa=-1,
     return_full=False,
     quasi=False,
+    pb_L=0.01,
+    pb_R=0.99,
 ):
 
     info = []
@@ -37,7 +39,7 @@ def optimize_acq(
         grid = path.rand(grid_size, total_dim, quasi=quasi)
         grid_acq = acq_func(gp, grid, Y_train, kappa=kappa)
         seeds_idx = np.argsort(grid_acq)[:nb_seed]
-        bounds = [(0.01, 0.99)] * len(eff_axes)
+        bounds = [(pb_L, pb_R)] * len(eff_axes)
         ixgrid = np.ix_(seeds_idx, eff_axes)
         seeds = grid[ixgrid]
 
