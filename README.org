@@ -47,12 +47,11 @@ python addtree_model_compression_multiple.py resnet50 OUTPUT_PATH --pretrained P
 [[./assets/resnet50-cummax-median-95ci.png]]
 
 * citation
-
-#+begin_verse
+#+begin_src bibtex
 @inproceedings{Ma2020a,
   TITLE = {Additive tree-structured covariance function for conditional parameter spaces in {Bayesian} optimization},
   AUTHOR = {Ma, Xingchen and Blaschko, Matthew B.},
   BOOKTITLE = {Artificial Intelligence and Statistics},
   YEAR = {2020},
 }
-#+end_verse
+#+end_src
