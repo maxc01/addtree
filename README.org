@@ -43,7 +43,7 @@ python addtree_model_compression_multiple.py resnet50 OUTPUT_PATH --pretrained P
 #+end_src
 
 #+CAPTION: Comparison of different algorithms on compressing resnet50
-#+attr_html: :width 200px
+#+ATTR_HTML: :align left :width 50
 [[./assets/resnet50-cummax-median-95ci.png]]
 
 * citation
