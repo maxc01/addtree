@@ -1,22 +1,19 @@
 #+TITLE: AddTree Covariance Function
 
 
-* install dependencies
+* dependencies
 
-** using poetry
-#+begin_src sh
-poetry install
-#+end_src
-
-** manually
-   This project depends on george, numpy, and scipy. george must be compiled
-   manually.
+This project depends on george, numpy, and scipy. george must be compiled manually.
    #+begin_src sh
 git clone https://github.com/maxc01/george
 cd george
 python setup.py install
    #+end_src
 
+If you are using poetry, 
+#+begin_src sh
+poetry install
+#+end_src
 
 
 * examples
@@ -38,7 +35,7 @@ cd examples
 python {{ algo }}_model_compression_multiple.py {{ model_name }} OUTPUT_PATH --pretrained PRETRAINED_PATH --prune_epochs 1
     #+end_src
 =model_name= can be "vgg16", "resnet50" or "resnet56".
-=algo= can be "addtree", "random" , "tpe" or "smac"
+=algo= can be "addtree", "random" , "tpe" or "smac".
 
 For example, to compress resnet50 using =addtree=,
 #+begin_src sh
@@ -46,15 +43,16 @@ python addtree_model_compression_multiple.py resnet50 OUTPUT_PATH --pretrained P
 #+end_src
 
 #+CAPTION: Comparison of different algorithms on compressing resnet50
+#+attr_html: :width 200px
 [[./assets/resnet50-cummax-median-95ci.png]]
 
 * citation
 
-#+begin_quote
+#+begin_verse
 @inproceedings{Ma2020a,
   TITLE = {Additive tree-structured covariance function for conditional parameter spaces in {Bayesian} optimization},
   AUTHOR = {Ma, Xingchen and Blaschko, Matthew B.},
   BOOKTITLE = {Artificial Intelligence and Statistics},
   YEAR = {2020},
 }
-#+end_quote
+#+end_verse
