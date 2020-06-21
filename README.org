@@ -25,7 +25,8 @@ python addtree_jenatton_small.py
    #+end_src
 log files will be located in =exp_results/addtree/jenatton-small/a-unique-dir=
 
-#+CAPTION: Comparison of different algorithms on optimizing a synthetic function
+The following figure shows comparison of different algorithms on optimizaing
+the synthetic function.
 [[./assets/synthetic-function.png]]
 
 ** model compression
@@ -42,8 +43,7 @@ For example, to compress resnet50 using =addtree=,
 python addtree_model_compression_multiple.py resnet50 OUTPUT_PATH --pretrained PRETRAINED_PATH --prune_epochs 1
 #+end_src
 
-#+CAPTION: Comparison of different algorithms on compressing resnet50
-#+ATTR_HTML: :align left :width 50px
+The following picture shows comparison of different algorithms on compressing resnet50.
 [[./assets/resnet50-cummax-median-95ci.png]]
 
 * citation
