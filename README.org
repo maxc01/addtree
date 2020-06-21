@@ -23,9 +23,7 @@ poetry install
 cd examples
 python addtree_jenatton_small.py
    #+end_src
-log files will be located in =exp_results/addtree/jenatton-small/a-unique-dir=
-
-The following figure shows comparison of different algorithms on optimizaing
+log files will be located in =exp_results/addtree/jenatton-small/a-unique-dir=. The following figure shows comparison of different algorithms on optimizaing
 the synthetic function.
 [[./assets/synthetic-function.png]]
 
