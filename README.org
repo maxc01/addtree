@@ -44,6 +44,7 @@ python addtree_model_compression_multiple.py resnet50 OUTPUT_PATH --pretrained P
 The following picture shows comparison of different algorithms on compressing resnet50.
 [[./assets/resnet50-cummax-median-95ci.png]]
 
+
 * citation
 #+begin_src bibtex
 @inproceedings{Ma2020a,
