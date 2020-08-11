@@ -27,3 +27,7 @@ from space_utils.smac_cs_resnet50_40d import get_cs as get_cs_resnet50_40d  # NO
 
 # smac utils
 from space_utils.smac_hpo_facade import SMAC4HPO
+
+# resnet20, NAS
+from space_utils.smac_cs_nas_resnet20 import cfg2funcparams as cfg2funcparams_nas_resnet20
+from space_utils.smac_cs_nas_resnet20 import get_cs as get_cs_nas_resnet20

@@ -10,3 +10,8 @@ from space_utils.tpe_space_resnet50_multiple import (
 # resnet56
 from space_utils.tpe_space_resnet56 import get_space as get_space_resnet56
 from space_utils.tpe_space_resnet56 import cfg2funcparams as cfg2funcparams_resnet56
+
+
+# resnet20, NAS
+from space_utils.tpe_space_nas_resnet20 import get_space as get_space_nas_resnet20
+from space_utils.tpe_space_nas_resnet20 import cfg2funcparams as cfg2funcparams_nas_resnet20
