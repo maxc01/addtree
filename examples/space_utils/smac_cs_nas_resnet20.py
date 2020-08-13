@@ -201,7 +201,15 @@ def get_cs():
     return cs
 
 
-if __name__ == '__main__':
+def testing_funcparams():
+    return {
+        "b1": {"method": "elu", "amount": [0.637111302400592, 0.538971977797732]},
+        "b2": {"method": "elu", "amount": [0.738546994320347, 0.02924100126669598]},
+        "b3": {"method": "leaky", "amount": [0.9626645632442054, 0.6387380373273952]},
+    }
+
+
+if __name__ == "__main__":
     print("vgg16")
     cs = get_cs()
     print(len(cs.get_hyperparameters()))
