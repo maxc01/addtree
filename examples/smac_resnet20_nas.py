@@ -66,7 +66,7 @@ def main():
         scenario = Scenario(
             {
                 "run_obj": "quality",  # we optimize quality (alternatively runtime)
-                "runcount_limit": 300,  # maximum function evaluations
+                "runcount_limit": 100,  # maximum function evaluations
                 "cs": cs,  # configuration space
                 "deterministic": "true",
                 "initial_incumbent": "LHD",

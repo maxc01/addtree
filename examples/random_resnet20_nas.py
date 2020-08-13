@@ -59,7 +59,7 @@ def main():
             return obj_info["value"]
 
         cs = get_cs()
-        for i in range(300):
+        for i in range(100):
             cfg = cs.sample_configuration()
             obj_func(cfg)
 

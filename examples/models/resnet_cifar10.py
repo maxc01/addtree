@@ -26,6 +26,9 @@ Reference:
 
 If you use this implementation in you work, please don't forget to mention the
 author, Yerlan Idelbayev.
+
+https://www.reddit.com/r/deeplearning/comments/i3muc4/pushing_cifar10_sota_with_resnets/
+https://github.com/akamaster/pytorch_resnet_cifar10
 """
 import torch
 import torch.nn as nn

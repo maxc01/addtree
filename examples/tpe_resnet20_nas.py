@@ -66,7 +66,7 @@ def main():
             obj_func,
             space=space,
             algo=tpe.suggest,
-            max_evals=300,
+            max_evals=100,
             trials=trials,
             show_progressbar=False,
         )

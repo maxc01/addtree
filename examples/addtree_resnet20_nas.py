@@ -6,7 +6,6 @@ import logging
 import numpy as np
 
 from addtree.kernel_utils import build_addtree
-from addtree.kernel_utils import get_const_kernel
 from addtree.storage import Storage
 from addtree.acq import optimize_acq, LCB
 
@@ -29,7 +28,7 @@ def main():
         if model_name == "resnet20":
             path2funcparam = path2funcparam_resnet20_nas
             build_tree = build_tree_resnet20_nas
-            obs_sigma = 0.25  # TODO: this needs to be determined
+            obs_sigma = 0.06
         else:
             raise ValueError(f"model name {model_name} is wrong")
 
@@ -51,8 +50,6 @@ def main():
         obs_dim = root.obs_dim
         ss = Storage()
         ker = build_addtree(root)
-        const_ker = get_const_kernel(-0.69, root.obs_dim)
-        ker = const_ker * ker
         n_init = cmd_args.n_init
 
         for i in range(n_init):
@@ -77,7 +74,7 @@ def main():
             ks = np.linspace(1, 3, max_iter)
             return ks[t]
 
-        for i in range(n_init, 300):
+        for i in range(n_init, 100):
             logger.info("=" * 50)
             logger.info(f"Starting BO {i+1} iteration (Optimization)")
             gp = ss.optimize(ker, n_restart=5, verbose=False)
