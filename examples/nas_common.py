@@ -63,7 +63,9 @@ def get_common_cmd_args():
     return args, extra
 
 
-def nas_train_test(cmd_args, params, main_logger, model_name):
+def nas_train_test(
+    cmd_args, params, main_logger, model_name, max_epoch=10, lr_ms=[7, 9]
+):
     """construct a net based on params, train the net for several epoches, return
     validation accuracy
 
@@ -81,9 +83,9 @@ def nas_train_test(cmd_args, params, main_logger, model_name):
     optimizer = optim.SGD(model.parameters(), lr=cmd_args.lr, momentum=0.9)
 
     best_top1 = 0
-    scheduler = MultiStepLR(optimizer, milestones=[7, 9], gamma=0.1)
+    scheduler = MultiStepLR(optimizer, milestones=lr_ms, gamma=0.1)
     main_logger.info("Training {} started...".format(model_name))
-    for epoch in range(10):
+    for epoch in range(max_epoch):
         main_logger.info("# Training Epoch {} #".format(epoch + 1))
         train(cmd_args, model, device, train_loader, optimizer, epoch, main_logger)
         main_logger.info("Testing model...")
