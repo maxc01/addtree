@@ -120,3 +120,4 @@ haha
 /poetry.lock
 /tests/a_huge_profile
 /examples/exp_results/
+*.json

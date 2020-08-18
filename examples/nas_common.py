@@ -80,7 +80,9 @@ def nas_train_test(
     if isinstance(model, nn.DataParallel):
         model = model.module
 
-    optimizer = optim.SGD(model.parameters(), lr=cmd_args.lr, momentum=0.9)
+    optimizer = optim.SGD(
+        model.parameters(), lr=cmd_args.lr, momentum=0.9, weight_decay=1e-4
+    )
 
     best_top1 = 0
     scheduler = MultiStepLR(optimizer, milestones=lr_ms, gamma=0.1)
