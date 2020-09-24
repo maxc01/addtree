@@ -60,4 +60,11 @@ The following picture shows comparison of different algorithms on compressing re
   BOOKTITLE = {Artificial Intelligence and Statistics},
   YEAR = {2020},
 }
+
+@article{Ma2020b,
+  TITLE = {Additive Tree-Structured Conditional Parameter Spaces in {Bayesian} Optimization: A Novel Covariance Function and a Fast Implementation},
+  AUTHOR = {Ma, Xingchen and Blaschko, Matthew B.},
+  YEAR = {2020},
+  journal = {IEEE Transactions on Pattern Analysis and Machine Intelligence},
+}
 #+end_src
