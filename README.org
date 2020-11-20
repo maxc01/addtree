@@ -48,7 +48,34 @@ The general rule of coding a tree-structured function is using a hierarchical
 dictionary as the parameter of this function. For example, the code snippet
 corresponding to the above tree-structured function is shown below.
 
-[[./assets/code-objective-function.png]]
+#+begin_src python
+def obj_func(params):
+    SHIFT = 0.5
+
+    if params["L1"]["cat_value"] == "left" and params["L2"]["cat_value"] == "left":
+        value = (
+            params["L1"]["cont_value"] + (params["L2"]["cont_value"] - SHIFT) ** 2 + 0.1
+        )
+    elif params["L1"]["cat_value"] == "left" and params["L2"]["cat_value"] == "right":
+        value = (
+            params["L1"]["cont_value"] + (params["L2"]["cont_value"] - SHIFT) ** 2 + 0.2
+        )
+    elif params["L1"]["cat_value"] == "right" and params["L2"]["cat_value"] == "left":
+        value = (
+            params["L1"]["cont_value"] + (params["L2"]["cont_value"] - SHIFT) ** 2 + 0.3
+        )
+    elif params["L1"]["cat_value"] == "right" and params["L2"]["cat_value"] == "right":
+        value = (
+            params["L1"]["cont_value"] + (params["L2"]["cont_value"] - SHIFT) ** 2 + 0.4
+        )
+    else:
+        raise ValueError("parameter names are not correct")
+
+    info = dict()
+    info["value"] = value
+    info["value_sigma"] = 1e-9
+    return info
+#+end_src
 
 For a more complex tree-structured function, see the [[https://github.com/maxc01/addtree/blob/6d2100597124bfe1b5fa5e433f827e7c80a427e2/examples/nas_common.py#L66][objective function of a simple NAS problem]].
 
