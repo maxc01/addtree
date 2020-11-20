@@ -1,7 +1,7 @@
 #+TITLE: AddTree Covariance Function
 
 
-* dependencies
+* Dependencies
 
 This project depends on george, numpy and scipy. george must be compiled manually.
    #+begin_src sh
@@ -10,7 +10,7 @@ cd george
 python setup.py install
    #+end_src
 
-If you are using [[https://python-poetry.org/][poetry]] to manage dependencies, the following commands will
+If you use [[https://python-poetry.org/][poetry]] to manage dependencies, the following commands will
 install all dependencies and this project:
 #+begin_src sh
 git clone https://github.com/maxc01/addtree
@@ -22,7 +22,37 @@ Otherwise, you will have to install these dependencies manually. Section
 their versions.
 
 
-* examples
+
+* How to code a tree given an objective function
+
+The first step is to represent an objective function at hand using a tree. For
+example, the synthetic function presented in Jenatton2017 can be encoded using
+a tree shown in the left part of the following figure and its corresponding
+code snippet is shown in the right part. We clarify this code snippet in the
+following.
+
+[[./assets/explanation-construction.png]]
+
+1. =root= node doesn't contain a continuous parameter, thus the dimension of
+   this parameter is set to be zero
+2. =x2= node contains a one-dimensional continuous parameter, and this
+   parameter is shared by two sub-functions associated with the first and
+   second leaves (counting from left to right)
+3. =x5= node contains a one-dimensional continuous parameter
+4. build tree dependencies by adding =x7= as a child of =x3=
+5. finish tree construction (precompute some quantities)
+
+* How to code a tree-structured function
+
+The general rule of coding a tree-structured function is using a hierarchical
+dictionary as the parameter of this function. For example, the code snippet
+corresponding to the above tree-structured function is shown below.
+
+[[./assets/code-objective-function.png]]
+
+For a more complex tree-structured function, see the [[https://github.com/maxc01/addtree/blob/6d2100597124bfe1b5fa5e433f827e7c80a427e2/examples/nas_common.py#L66][objective function of a simple NAS problem]].
+
+* Examples
 
 ** synthetic function (from Jenatton2017)
    #+begin_src sh
