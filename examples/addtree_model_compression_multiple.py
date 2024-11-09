@@ -10,10 +10,10 @@ from addtree.kernel_utils import get_const_kernel
 from addtree.storage import Storage
 from addtree.acq import optimize_acq, LCB
 
-from compression_common import setup_logger
+from common_utils import setup_logger
 from compression_common import setup_and_prune
 from compression_common import get_common_cmd_args
-from compression_common import get_experiment_id
+from common_utils import get_experiment_id
 
 from addtree_utils import build_tree_vgg16
 from addtree_utils import path2funcparam_vgg16

@@ -3,23 +3,17 @@
 
 * Dependencies
 
-This project depends on george, numpy and scipy. george must be compiled manually.
-   #+begin_src sh
-git clone https://github.com/maxc01/george
-cd george
-python setup.py install
-   #+end_src
+This project depends on a customized george, setup can be done via conda:
 
-If you use [[https://python-poetry.org/][poetry]] to manage dependencies, the following commands will
-install all dependencies and this project:
 #+begin_src sh
+conda create -n add python=3.11
+conda activate add
+conda install -y -c conda-forge libstdcxx-ng
+conda install -y -c anaconda pyyaml jinja2 numpy scipy pybind11
 git clone https://github.com/maxc01/addtree
 cd addtree
-poetry install
+pip install .
 #+end_src
-Otherwise, you will have to install these dependencies manually. Section
-=[tool.poetry.dependencies]= in =pyproject.toml= lists all dependencies and
-their versions.
 
 
 

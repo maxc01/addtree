@@ -5,8 +5,8 @@ import logging
 
 from hyperopt import fmin, tpe, STATUS_OK, Trials
 
-from compression_common import setup_logger
-from compression_common import get_experiment_id
+from common_utils import setup_logger
+from common_utils import get_experiment_id
 from nas_common import get_common_cmd_args
 from nas_common import nas_train_test
 

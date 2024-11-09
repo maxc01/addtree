@@ -9,8 +9,8 @@ from addtree.kernel_utils import build_addtree
 from addtree.storage import Storage
 from addtree.acq import optimize_acq, LCB
 
-from compression_common import setup_logger
-from compression_common import get_experiment_id
+from common_utils import setup_logger
+from common_utils import get_experiment_id
 from nas_common import get_common_cmd_args
 from nas_common import nas_train_test
 

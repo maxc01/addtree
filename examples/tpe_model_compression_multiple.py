@@ -4,11 +4,11 @@ import os
 import logging
 
 
-from compression_common import setup_logger
+from common_utils import setup_logger
 from compression_common import setup_and_prune
 from hyperopt import fmin, tpe, STATUS_OK, Trials
 from compression_common import get_common_cmd_args
-from compression_common import get_experiment_id
+from common_utils import get_experiment_id
 
 from tpe_utils import cfg2funcparams_vgg16
 from tpe_utils import get_space_vgg16

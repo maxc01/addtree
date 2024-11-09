@@ -3,10 +3,10 @@ import json
 import os
 import logging
 
-from compression_common import setup_logger
+from common_utils import setup_logger
 from compression_common import setup_and_prune
 from compression_common import get_common_cmd_args
-from compression_common import get_experiment_id
+from common_utils import get_experiment_id
 
 from smac_utils import cfg2funcparams_vgg16
 from smac_utils import get_cs_vgg16
